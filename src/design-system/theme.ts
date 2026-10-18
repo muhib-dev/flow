@@ -1,16 +1,16 @@
 const space = { none: 0, xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;
 
-const radius = { sm: 6, md: 10, lg: 16, xl: 24, pill: 999 } as const;
+const radius = { xs: 2, sm: 6, md: 10, lg: 16, xl: 24, pill: 999 } as const;
 
 const typography = {
   largeNumber: {
     fontSize: 40,
     lineHeight: 48,
     fontWeight: '700',
-    letterSpacing: -0.8,
+    letterSpacing: -1,
     fontVariant: ['tabular-nums'],
   },
-  display: { fontSize: 34, lineHeight: 41, fontWeight: '700', letterSpacing: -0.5 },
+  display: { fontSize: 34, lineHeight: 41, fontWeight: '700', letterSpacing: -0.6 },
   title: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
   headline: { fontSize: 17, lineHeight: 22, fontWeight: '600' },
   body: { fontSize: 17, lineHeight: 22, fontWeight: '400' },
@@ -23,7 +23,20 @@ const sizes = {
   hitTarget: 44,
   controlHeight: 52,
   progressHeight: 8,
+  progressHeightSm: 4,
+  tick: 1,
+  tickMinor: 4,
+  tickMajor: 8,
+  paceTick: 10,
+  rulerMarkerWidth: 2,
+  rulerMarkerHeight: 28,
   swatch: 12,
+  swatchSm: 8,
+  avatar: 32,
+  listRow: 60,
+  fabHeight: 56,
+  menuWidth: 232,
+  statMinWidth: 96,
   iconSm: 16,
   iconControl: 20,
   iconMd: 24,
@@ -34,6 +47,7 @@ const sizes = {
   logoRingOuter: 152,
   backdropBlob: 320,
   formMaxWidth: 420,
+  readableMaxWidth: 300,
   categoryBadge: 40,
   heroOrb: 220,
   focusRing: 3,
@@ -58,14 +72,19 @@ export const lightTheme = {
     onPrimaryGlow: 'rgba(255,255,255,0.08)',
     accentGlow: 'rgba(236,72,153,0.10)',
     danger: '#E5484D',
+    // Base danger/warning fail WCAG AA as small text on white; use these for copy.
+    dangerText: '#C62A2F',
     onDanger: '#FFFFFF',
     success: '#30A46C',
     warning: '#F5A524',
+    warningText: '#9A5800',
     overlay: 'rgba(0,0,0,0.4)',
   },
   shadows: {
     card: '0px 1px 2px rgba(15,16,32,0.04), 0px 4px 16px rgba(15,16,32,0.06)',
     primary: '0px 6px 16px rgba(79,70,229,0.28)',
+    popover: '0px 8px 24px rgba(15,16,32,0.12)',
+    fab: '0px 1px 3px rgba(15,16,32,0.2), 0px 4px 8px rgba(15,16,32,0.12)',
   },
 } as const;
 
@@ -86,14 +105,18 @@ export const darkTheme = {
     onPrimaryGlow: 'rgba(255,255,255,0.08)',
     accentGlow: 'rgba(236,72,153,0.10)',
     danger: '#FF6369',
+    dangerText: '#FF6369',
     onDanger: '#FFFFFF',
     success: '#3DD68C',
     warning: '#FFB224',
+    warningText: '#FFB224',
     overlay: 'rgba(0,0,0,0.6)',
   },
   shadows: {
     card: '0px 1px 2px rgba(0,0,0,0.3)',
     primary: '0px 6px 16px rgba(99,102,241,0.35)',
+    popover: '0px 8px 24px rgba(0,0,0,0.5)',
+    fab: '0px 1px 3px rgba(0,0,0,0.4), 0px 4px 8px rgba(0,0,0,0.3)',
   },
 } as const;
 

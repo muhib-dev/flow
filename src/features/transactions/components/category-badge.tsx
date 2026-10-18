@@ -18,15 +18,24 @@ const FALLBACK_MATERIAL_ICON: AndroidSymbol = 'category';
 /** Hex alpha appended to the category color for the pastel background. */
 const TINT_ALPHA = '24';
 
-export function CategoryBadge({ icon, color }: { icon: string; color: string }) {
+export function CategoryBadge({
+  icon,
+  color,
+  neutral = false,
+}: {
+  icon: string;
+  color: string;
+  /** Plain muted tile with a text-colored glyph instead of the category tint. */
+  neutral?: boolean;
+}) {
   const { theme } = useUnistyles();
   const material = MATERIAL_ICONS[icon] ?? FALLBACK_MATERIAL_ICON;
   return (
-    <View style={styles.badge(`${color}${TINT_ALPHA}`)}>
+    <View style={styles.badge(neutral ? theme.colors.surfaceMuted : `${color}${TINT_ALPHA}`)}>
       <Icon
         name={{ ios: icon as SFSymbol, android: material, web: material }}
         size={theme.sizes.iconControl}
-        color={color}
+        color={neutral ? theme.colors.text : color}
       />
     </View>
   );

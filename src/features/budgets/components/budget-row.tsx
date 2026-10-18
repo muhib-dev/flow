@@ -3,57 +3,89 @@ import { Pressable, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { ProgressBar, Text } from '@/design-system';
-import type { BudgetSummary } from '@/features/transactions/api/transactions-repo';
-import { CategoryBadge } from '@/features/transactions/components/category-badge';
-import { formatMoney } from '@/lib/format';
+import { formatMoneyShort } from '@/lib/format';
+
+import type { RankedBudget } from '../api/pace';
+
+const BAR_DELAY_MS = 150;
 
 export const BudgetRow = memo(function BudgetRow({
   budget,
+  calendarRatio,
   onPress,
 }: {
-  budget: BudgetSummary;
+  budget: RankedBudget;
+  /** day ÷ daysInMonth, drawn as the pace tick. */
+  calendarRatio: number;
   onPress: (categoryId: string) => void;
 }) {
-  const ratio = budget.limitCents > 0 ? budget.spentCents / budget.limitCents : 0;
+  const over = budget.pace === 'over';
+  const above = budget.pace === 'above';
   const remaining = budget.limitCents - budget.spentCents;
-  const over = remaining < 0;
+  const right = over
+    ? `Over by ${formatMoneyShort(-remaining)}`
+    : `${formatMoneyShort(remaining)} left`;
+  const sub = `${formatMoneyShort(budget.spentCents)} of ${formatMoneyShort(budget.limitCents)}`;
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${budget.name}: ${formatMoney(budget.spentCents)} of ${formatMoney(budget.limitCents)}`}
+      accessibilityLabel={`${budget.name}: ${sub}, ${right}${above ? ', above pace' : ''}`}
       onPress={() => onPress(budget.categoryId)}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <CategoryBadge icon={budget.icon} color={budget.color} />
-      <View style={styles.body}>
-        <View style={styles.labels}>
-          <Text variant="label" numberOfLines={1} style={styles.name}>
-            {budget.name}
-          </Text>
-          <Text variant="caption" tone="muted" style={styles.numbers}>
-            {formatMoney(budget.spentCents)} / {formatMoney(budget.limitCents)}
+      <View style={styles.inner}>
+        <View style={styles.line}>
+          <Text variant="body">{budget.name}</Text>
+          <Text
+            variant="label"
+            tone={over ? 'dangerText' : 'normal'}
+            style={[styles.right, styles.tabular]}
+          >
+            {right}
           </Text>
         </View>
-        <ProgressBar value={ratio} color={budget.color} />
-        <Text variant="caption" tone={over ? 'danger' : 'muted'}>
-          {over ? `Over by ${formatMoney(-remaining)}` : `${formatMoney(remaining)} left`}
-        </Text>
+        <ProgressBar
+          value={budget.ratio}
+          color={budget.color}
+          size="sm"
+          marker={calendarRatio}
+          delay={BAR_DELAY_MS}
+        />
+        <View style={styles.subLine}>
+          <Text variant="caption" tone="muted" style={styles.tabular}>
+            {sub}
+          </Text>
+          {above ? (
+            <Text variant="caption" tone="warningText" style={styles.flag}>
+              · Above pace
+            </Text>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
 });
 
 const styles = StyleSheet.create((theme) => ({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.md,
-    minHeight: theme.sizes.hitTarget,
-    paddingVertical: theme.space.sm,
+  // Full-bleed: the parent cancels the screen gutter so the press state reaches the edges.
+  row: { paddingHorizontal: theme.space.xl },
+  pressed: { backgroundColor: theme.colors.surfaceMuted },
+  inner: {
+    gap: theme.space.sm,
+    paddingVertical: theme.space.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
   },
-  pressed: { opacity: 0.7 },
-  body: { flex: 1, gap: theme.space.xs },
-  labels: { flexDirection: 'row', justifyContent: 'space-between', gap: theme.space.sm },
-  name: { flexShrink: 1 },
-  numbers: { fontVariant: ['tabular-nums'] },
+  line: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    columnGap: theme.space.md,
+    rowGap: theme.space.xs,
+  },
+  subLine: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs },
+  right: { marginLeft: 'auto' },
+  flag: { fontWeight: theme.typography.label.fontWeight },
+  tabular: { fontVariant: ['tabular-nums'] },
 }));

@@ -4,7 +4,16 @@ import { StyleSheet } from 'react-native-unistyles';
 export type TextProps = RNTextProps & {
   variant?:
     'largeNumber' | 'display' | 'title' | 'headline' | 'body' | 'label' | 'callout' | 'caption';
-  tone?: 'normal' | 'muted' | 'primary' | 'danger' | 'success' | 'onPrimary' | 'onPrimaryMuted';
+  tone?:
+    | 'normal'
+    | 'muted'
+    | 'primary'
+    | 'danger'
+    | 'dangerText'
+    | 'warningText'
+    | 'success'
+    | 'onPrimary'
+    | 'onPrimaryMuted';
   align?: 'left' | 'center' | 'right';
 };
 
@@ -28,6 +37,8 @@ const styles = StyleSheet.create((theme) => ({
         muted: { color: theme.colors.textMuted },
         primary: { color: theme.colors.primary },
         danger: { color: theme.colors.danger },
+        dangerText: { color: theme.colors.dangerText },
+        warningText: { color: theme.colors.warningText },
         success: { color: theme.colors.success },
         onPrimary: { color: theme.colors.onPrimary },
         onPrimaryMuted: { color: theme.colors.onPrimaryMuted },

@@ -7,7 +7,8 @@ export default function Layout() {
 
   return (
     <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="index" options={{ title: 'Flow', headerLargeTitle: true }} />
+      {/* The dashboard draws its own month header. */}
+      <Stack.Screen name="index" options={{ title: 'Flow', headerShown: false }} />
     </Stack>
   );
 }

@@ -7,7 +7,7 @@ export type IconName = SymbolViewProps['name'];
 type IconProps = {
   name: IconName;
   size?: number;
-  tone?: 'normal' | 'muted' | 'primary' | 'danger' | 'onPrimary';
+  tone?: 'normal' | 'muted' | 'primary' | 'danger' | 'success' | 'warningText' | 'onPrimary';
   /** Overrides `tone`, for data-driven colors like categories. */
   color?: string;
 };
@@ -17,6 +17,8 @@ const TONE_COLOR = {
   muted: 'textMuted',
   primary: 'primary',
   danger: 'danger',
+  success: 'success',
+  warningText: 'warningText',
   onPrimary: 'onPrimary',
 } as const;
 

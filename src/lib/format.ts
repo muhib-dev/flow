@@ -7,6 +7,12 @@ const moneyFormatter = new Intl.NumberFormat(locale?.languageTag, {
   style: 'currency',
   currency,
 });
+const wholeMoneyFormatter = new Intl.NumberFormat(locale?.languageTag, {
+  style: 'currency',
+  currency,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 const dateFormatter = new Intl.DateTimeFormat(locale?.languageTag, {
   day: 'numeric',
   month: 'short',
@@ -16,13 +22,56 @@ const monthFormatter = new Intl.DateTimeFormat(locale?.languageTag, {
   month: 'long',
   year: 'numeric',
 });
+const monthNameFormatter = new Intl.DateTimeFormat(locale?.languageTag, { month: 'long' });
+const shortDayFormatter = new Intl.DateTimeFormat(locale?.languageTag, {
+  day: 'numeric',
+  month: 'short',
+});
+const weekdayDayFormatter = new Intl.DateTimeFormat(locale?.languageTag, {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const formatMoney = (cents: number) => moneyFormatter.format(cents / 100);
+
+/** Drops the cents when the amount is whole: "$180", "$18.40". */
+export const formatMoneyShort = (cents: number) =>
+  Math.round(cents) % 100 === 0 ? wholeMoneyFormatter.format(cents / 100) : formatMoney(cents);
 
 export const formatDate = (ms: number) => dateFormatter.format(ms);
 
 export const formatMonth = (month: string) =>
   monthFormatter.format(new Date(`${month}-01T00:00:00`));
+
+/** "October" for "2026-10". */
+export const formatMonthName = (month: string) =>
+  monthNameFormatter.format(new Date(`${month}-01T00:00:00`));
+
+/** "Oct 16". */
+export const formatShortDay = (ms: number) => shortDayFormatter.format(ms);
+
+/** Start of the local calendar day containing `ms`. */
+export function startOfDay(ms: number) {
+  const d = new Date(ms);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** "Today", "Yesterday", otherwise "Fri, Oct 16". */
+export function formatDayLabel(ms: number, now = Date.now()) {
+  const days = Math.round((startOfDay(now) - startOfDay(ms)) / DAY_MS);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return weekdayDayFormatter.format(ms);
+}
+
+/** YYYY-MM for the month `offset` months away from `month`. */
+export function shiftMonth(month: string, offset: number) {
+  const [year, m] = month.split('-').map(Number);
+  return currentMonth(new Date(year, m - 1 + offset, 1));
+}
 
 /** Current calendar month as YYYY-MM in local time. */
 export function currentMonth(now = new Date()) {
