@@ -48,7 +48,6 @@ export function DailySpendBars({ days, average }: { days: DaySpend[]; average: n
     Math.min(days.length - 1, Math.max(0, Math.floor(x / (barWidth + gap))));
   const pan = usePanGesture({
     runOnJS: true,
-    minDistance: 0,
     activeOffsetX: [-theme.space.sm, theme.space.sm],
     failOffsetY: [-theme.space.md, theme.space.md],
     onBegin: (e) => setSelected(indexAt(e.x)),
