@@ -1,0 +1,33 @@
+import { currentMonth, monthProgress, monthRange, parseAmountToCents } from '../format';
+
+describe('parseAmountToCents', () => {
+  it.each([
+    ['12', 1200],
+    ['12.5', 1250],
+    ['12,50', 1250],
+    ['0.01', 1],
+  ])('parses %s', (input, cents) => {
+    expect(parseAmountToCents(input)).toBe(cents);
+  });
+
+  it.each(['', '0', 'abc', '1.234', '-5'])('rejects %s', (input) => {
+    expect(parseAmountToCents(input)).toBeNull();
+  });
+});
+
+describe('months', () => {
+  it('formats the current month as YYYY-MM', () => {
+    expect(currentMonth(new Date(2026, 0, 31))).toBe('2026-01');
+  });
+
+  it('spans the whole month', () => {
+    const { start, end } = monthRange('2026-02');
+    expect(new Date(start).getDate()).toBe(1);
+    expect(new Date(end).getMonth()).toBe(2);
+  });
+
+  it('counts today as a day left', () => {
+    expect(monthProgress(new Date(2026, 1, 1))).toEqual({ day: 1, daysInMonth: 28, daysLeft: 28 });
+    expect(monthProgress(new Date(2026, 9, 31))).toEqual({ day: 31, daysInMonth: 31, daysLeft: 1 });
+  });
+});
