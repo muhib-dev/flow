@@ -8,7 +8,7 @@ import { Text } from './text';
 
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'inverse';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'inverse';
   icon?: IconName;
   loading?: boolean;
 };
@@ -32,7 +32,13 @@ export function Button({
   const scaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const isDisabled = disabled || loading;
   const isFilled = variant === 'primary' || variant === 'danger';
-  const tone = isDisabled ? 'muted' : isFilled ? 'onPrimary' : 'primary';
+  const tone = isDisabled
+    ? 'muted'
+    : isFilled
+      ? 'onPrimary'
+      : variant === 'outline'
+        ? 'normal'
+        : 'primary';
 
   return (
     <Animated.View style={scaleStyle}>
@@ -41,11 +47,7 @@ export function Button({
         accessibilityLabel={label}
         accessibilityState={{ disabled: isDisabled, busy: loading }}
         disabled={isDisabled}
-        style={[
-          styles.button,
-          isDisabled && variant !== 'ghost' && styles.disabled,
-          !isDisabled && variant === 'primary' && styles.raised,
-        ]}
+        style={[styles.button, isDisabled && variant !== 'ghost' && styles.disabled]}
         onPressIn={(e) => {
           scale.set(withSpring(PRESSED_SCALE));
           onPressIn?.(e);
@@ -79,7 +81,7 @@ const styles = StyleSheet.create((theme) => ({
   button: {
     minHeight: theme.sizes.controlHeight,
     paddingHorizontal: theme.space.xl,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.md,
     flexDirection: 'row',
     gap: theme.space.sm,
     alignItems: 'center',
@@ -88,12 +90,16 @@ const styles = StyleSheet.create((theme) => ({
       variant: {
         primary: { backgroundColor: theme.colors.primary },
         secondary: { backgroundColor: theme.colors.primaryMuted },
+        outline: {
+          backgroundColor: theme.colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: theme.colors.border,
+        },
         ghost: { backgroundColor: 'transparent' },
         danger: { backgroundColor: theme.colors.danger },
         inverse: { backgroundColor: theme.colors.onPrimary },
       },
     },
   },
-  raised: { boxShadow: theme.shadows.primary },
   disabled: { backgroundColor: theme.colors.surfaceMuted },
 }));

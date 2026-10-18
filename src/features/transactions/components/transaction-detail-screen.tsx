@@ -3,18 +3,42 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { Button, Card, EmptyState, ErrorState, LoadingState, Screen, Text } from '@/design-system';
-import { formatDate, formatMoney } from '@/lib/format';
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  ListRow,
+  LoadingState,
+  Screen,
+  Section,
+  Swatch,
+  Text,
+  TextButton,
+} from '@/design-system';
+import { formatDate, formatDayLabel, formatMoney } from '@/lib/format';
 
-import { useDeleteTransaction, useSaveTransaction } from '../hooks/use-transaction-mutations';
+import {
+  useDeleteTransaction,
+  useRetryTransaction,
+  useSaveTransaction,
+} from '../hooks/use-transaction-mutations';
 import { useTransaction } from '../hooks/use-transactions';
 import { TransactionForm } from './transaction-form';
+
+const STATUS = {
+  synced: { label: 'Synced', tone: 'muted' },
+  pending: { label: 'Waiting to sync', tone: 'muted' },
+  failed: { label: 'Not synced', tone: 'dangerText' },
+} as const;
+
+const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
 export function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isPending, isError, error, refetch } = useTransaction(id);
   const save = useSaveTransaction();
   const remove = useDeleteTransaction();
+  const retry = useRetryTransaction();
   const [editing, setEditing] = useState(false);
 
   if (isPending) return <LoadingState />;
@@ -25,14 +49,18 @@ export function TransactionDetailScreen() {
         title="Expense not found"
         message="It may have been deleted."
         actionLabel="Go back"
-        onAction={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onAction={goBack}
       />
     );
   }
 
+  const title = data.note || data.categoryName;
+  const status = STATUS[data.syncStatus];
+  const failed = data.syncStatus === 'failed';
+
   return (
     <Screen scroll>
-      <Stack.Screen options={{ title: data.note || data.categoryName }} />
+      <Stack.Screen options={{ title: editing ? 'Edit expense' : title }} />
       {editing ? (
         <TransactionForm
           initial={data}
@@ -44,30 +72,50 @@ export function TransactionDetailScreen() {
         />
       ) : (
         <>
-          <Card>
-            <Text variant="display">{formatMoney(data.amountCents)}</Text>
-            <View style={styles.meta}>
-              <Text tone="muted">{data.categoryName}</Text>
-              <Text tone="muted">{formatDate(data.occurredAt)}</Text>
-              {data.note ? <Text>{data.note}</Text> : null}
-              <Text variant="caption" tone={data.syncStatus === 'failed' ? 'danger' : 'muted'}>
-                {data.syncStatus === 'synced'
-                  ? 'Synced'
-                  : data.syncStatus === 'pending'
-                    ? 'Waiting to sync'
-                    : 'Sync failed'}
+          <View style={styles.hero}>
+            <View style={styles.label}>
+              <Swatch color={data.categoryColor} />
+              <Text variant="callout" tone="muted">
+                {data.categoryName} · {formatDayLabel(data.occurredAt)}
               </Text>
             </View>
-          </Card>
-          <Button label="Edit" variant="secondary" onPress={() => setEditing(true)} />
-          <Button
-            label="Delete"
-            variant="danger"
-            onPress={() => {
-              remove.mutate(data.id);
-              router.back();
-            }}
-          />
+            <Text
+              variant="largeNumber"
+              tone={data.syncStatus === 'synced' ? 'normal' : 'muted'}
+              adjustsFontSizeToFit
+              numberOfLines={1}
+              style={styles.amount}
+            >
+              {formatMoney(data.amountCents)}
+            </Text>
+            {data.note ? <Text variant="body">{data.note}</Text> : null}
+          </View>
+
+          <Section title="Details" style={styles.section}>
+            <ListRow label="Category" value={data.categoryName} />
+            <ListRow label="Date" value={formatDate(data.occurredAt)} />
+            <ListRow
+              label="Status"
+              value={failed ? 'Not synced, tap to retry' : status.label}
+              valueTone={status.tone}
+              onPress={failed ? () => retry(data) : undefined}
+              chevron={false}
+              accessibilityHint={failed ? 'Double tap to retry' : undefined}
+            />
+          </Section>
+
+          <View style={styles.actions}>
+            <Button label="Edit" variant="outline" onPress={() => setEditing(true)} />
+            <TextButton
+              label="Delete expense"
+              tone="dangerText"
+              style={styles.delete}
+              onPress={() => {
+                remove.mutate(data.id);
+                router.back();
+              }}
+            />
+          </View>
         </>
       )}
     </Screen>
@@ -75,5 +123,10 @@ export function TransactionDetailScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  meta: { gap: theme.space.xs },
+  hero: { gap: theme.space.xs },
+  label: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
+  amount: { fontVariant: ['tabular-nums'] },
+  section: { marginTop: theme.space.xxxl },
+  actions: { marginTop: theme.space.xl, gap: theme.space.sm },
+  delete: { alignSelf: 'center' },
 }));

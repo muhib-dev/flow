@@ -43,7 +43,7 @@ export function TextField({ label, icon, error, style, onFocus, onBlur, ...rest 
         />
       </View>
       {error ? (
-        <Text variant="caption" tone="danger" accessibilityLiveRegion="polite">
+        <Text variant="caption" tone="dangerText" accessibilityLiveRegion="polite">
           {error}
         </Text>
       ) : null}
@@ -59,7 +59,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.sm,
     minHeight: theme.sizes.controlHeight,
     paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     variants: {

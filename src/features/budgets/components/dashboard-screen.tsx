@@ -1,33 +1,26 @@
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { Button, Icon, Text, toast } from '@/design-system';
+import { Button, ErrorState, SectionHeader, Text, TextButton, toast } from '@/design-system';
+import { groupByDay } from '@/features/transactions/api/group-by-day';
 import { syncNow } from '@/features/transactions/api/sync';
 import type {
   BudgetSummary,
   TransactionListItem,
 } from '@/features/transactions/api/transactions-repo';
+import { DayHeader } from '@/features/transactions/components/day-header';
 import { TransactionRow } from '@/features/transactions/components/transaction-row';
-import { useSaveTransaction } from '@/features/transactions/hooks/use-transaction-mutations';
+import { useRetryTransaction } from '@/features/transactions/hooks/use-transaction-mutations';
 import { useTransactions } from '@/features/transactions/hooks/use-transactions';
 import {
   currentMonth,
-  formatDayLabel,
   formatMoney,
   formatMoneyShort,
   formatMonthName,
   monthProgress,
-  startOfDay,
 } from '@/lib/format';
 
 import { paceOf, rankBudgets, safeToSpendPerDay, type Pace } from '../api/pace';
@@ -38,34 +31,13 @@ import { BudgetRow } from './budget-row';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSkeleton } from './dashboard-skeleton';
 import { MonthRuler } from './month-ruler';
+import { PaceLine } from './pace-line';
+import { StatRow } from './stat-row';
 
 const RECENT_LIMIT = 5;
 const BUDGETS_COLLAPSED = 4;
 const ENTER_MS = 400;
 const ENTER_STAGGER_MS = 90;
-
-const CLOUD_OFF_ICON = { ios: 'icloud.slash', android: 'cloud_off', web: 'cloud_off' } as const;
-
-const PACE = {
-  ok: {
-    word: 'On track',
-    tone: 'normal',
-    iconTone: 'success',
-    icon: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
-  },
-  above: {
-    word: 'Above pace',
-    tone: 'warningText',
-    iconTone: 'warningText',
-    icon: { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' },
-  },
-  over: {
-    word: 'Over budget',
-    tone: 'dangerText',
-    iconTone: 'danger',
-    icon: { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' },
-  },
-} as const;
 
 const addExpense = () => router.push('/add');
 const openAll = () => router.push('/transactions');
@@ -105,8 +77,17 @@ export function DashboardScreen() {
 
   let body;
   if (loading) body = <DashboardSkeleton />;
-  else if (failed) body = <LoadFailed month={month} onRetry={retry} />;
-  else if (!summary.data.some((b) => b.limitCents > 0)) {
+  else if (failed) {
+    body = (
+      <View style={styles.bleed}>
+        <ErrorState
+          title={`Couldn't load ${formatMonthName(month)}`}
+          message="Check your connection and try again. Expenses you've already added aren't affected."
+          onRetry={retry}
+        />
+      </View>
+    );
+  } else if (!summary.data.some((b) => b.limitCents > 0)) {
     body = <NoBudgets month={month} recent={recent.data} />;
   } else body = <Overview month={month} budgets={summary.data} recent={recent.data} />;
 
@@ -199,17 +180,11 @@ function Hero({
   daysInMonth: number;
   daysLeft: number;
 }) {
-  const { theme } = useUnistyles();
   const over = pace === 'over';
-  const perDay = safeToSpendPerDay(spent, limit, daysLeft);
-  const target = over ? spent - limit : perDay;
+  const target = over ? spent - limit : safeToSpendPerDay(spent, limit, daysLeft);
   const shown = useCountUp(Math.round(target));
-  const copy = PACE[pace];
-  const left = Math.max(0, limit - spent);
   const daysWord = daysLeft === 1 ? 'day' : 'days';
   const unit = over ? `${daysLeft} ${daysWord} left` : `a day for ${daysLeft} ${daysWord}`;
-  const spentPct = Math.round((limit > 0 ? spent / limit : 0) * 100);
-  const monthPct = Math.round((day / daysInMonth) * 100);
 
   return (
     <View>
@@ -238,15 +213,11 @@ function Hero({
         </Text>
       </View>
       <View style={styles.paceLine}>
-        <View style={styles.paceWord}>
-          <Icon name={copy.icon} size={theme.sizes.iconSm} tone={copy.iconTone} />
-          <Text variant="label" tone={copy.tone} numberOfLines={1}>
-            {copy.word}
-          </Text>
-        </View>
-        <Text variant="callout" tone="muted">
-          {spentPct}% spent, {monthPct}% of month gone
-        </Text>
+        <PaceLine
+          pace={pace}
+          spentRatio={limit > 0 ? spent / limit : 0}
+          calendarRatio={day / daysInMonth}
+        />
       </View>
 
       <View style={styles.ruler}>
@@ -261,23 +232,14 @@ function Hero({
       </View>
 
       <View style={styles.stats}>
-        <Stat label="Spent" value={formatMoney(spent)} />
-        <Stat label="Left" value={formatMoney(left)} />
-        <Stat label="Budget" value={formatMoneyShort(limit)} />
+        <StatRow
+          stats={[
+            { label: 'Spent', value: formatMoney(spent) },
+            { label: 'Left', value: formatMoney(Math.max(0, limit - spent)) },
+            { label: 'Budget', value: formatMoneyShort(limit) },
+          ]}
+        />
       </View>
-    </View>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.stat} accessible accessibilityLabel={`${label}: ${value}`}>
-      <Text variant="caption" tone="muted">
-        {label}
-      </Text>
-      <Text variant="label" style={styles.tabular}>
-        {value}
-      </Text>
     </View>
   );
 }
@@ -307,12 +269,7 @@ function BudgetsSection({
 
   return (
     <>
-      <View style={[styles.sectionHeader, styles.sectionHeaderPadded]}>
-        <Text variant="headline">Budgets</Text>
-        <Text variant="caption" tone={detailTone} style={styles.semibold}>
-          {detail}
-        </Text>
-      </View>
+      <SectionHeader title="Budgets" detail={detail} detailTone={detailTone} />
       <View style={styles.bleed}>
         {shown.map((b) => (
           <BudgetRow
@@ -335,37 +292,12 @@ function BudgetsSection({
 }
 
 function RecentSection({ items }: { items: TransactionListItem[] }) {
-  const save = useSaveTransaction();
-  const retry = useCallback(
-    (item: TransactionListItem) =>
-      save.mutate({
-        id: item.id,
-        amountCents: item.amountCents,
-        categoryId: item.categoryId,
-        note: item.note,
-        occurredAt: item.occurredAt,
-      }),
-    [save],
-  );
-
-  const groups: { day: number; total: number; items: TransactionListItem[] }[] = [];
-  for (const item of items) {
-    const day = startOfDay(item.occurredAt);
-    let group = groups.find((g) => g.day === day);
-    if (!group) {
-      group = { day, total: 0, items: [] };
-      groups.push(group);
-    }
-    group.total += item.amountCents;
-    group.items.push(item);
-  }
+  const retry = useRetryTransaction();
+  const groups = groupByDay(items);
 
   return (
     <>
-      <View style={styles.sectionHeader}>
-        <Text variant="headline">Recent</Text>
-        <TextButton label="See all" onPress={openAll} />
-      </View>
+      <SectionHeader title="Recent" action={{ label: 'See all', onPress: openAll }} />
       {groups.length === 0 ? (
         <Text variant="callout" tone="muted" style={styles.emptyLine}>
           Nothing logged yet this month. Expenses you add show up here.
@@ -373,14 +305,7 @@ function RecentSection({ items }: { items: TransactionListItem[] }) {
       ) : (
         groups.map((g) => (
           <View key={g.day}>
-            <View style={styles.dayHeader}>
-              <Text variant="caption" tone="muted" style={styles.semibold}>
-                {formatDayLabel(g.day)}
-              </Text>
-              <Text variant="caption" tone="muted" style={styles.tabular}>
-                {formatMoney(g.total)}
-              </Text>
-            </View>
+            <DayHeader day={g.day} totalCents={g.totalCents} />
             <View style={styles.bleed}>
               {g.items.map((t) => (
                 <TransactionRow
@@ -418,9 +343,7 @@ function NoBudgets({ month, recent }: { month: string; recent: TransactionListIt
           <RecentSection items={recent} />
         ) : (
           <>
-            <View style={[styles.sectionHeader, styles.sectionHeaderPadded]}>
-              <Text variant="headline">Recent</Text>
-            </View>
+            <SectionHeader title="Recent" />
             <Text variant="callout" tone="muted" style={styles.emptyLine}>
               No transactions yet.
             </Text>
@@ -428,47 +351,6 @@ function NoBudgets({ month, recent }: { month: string; recent: TransactionListIt
         )}
       </View>
     </Animated.View>
-  );
-}
-
-function LoadFailed({ month, onRetry }: { month: string; onRetry: () => void }) {
-  const { theme } = useUnistyles();
-  return (
-    <View style={styles.error}>
-      <View style={styles.errorTitle}>
-        <Icon name={CLOUD_OFF_ICON} size={theme.sizes.iconControl} tone="muted" />
-        <Text variant="headline">Couldn&apos;t load {formatMonthName(month)}</Text>
-      </View>
-      <Text variant="callout" tone="muted">
-        Check your connection and try again. Expenses you&apos;ve already added aren&apos;t
-        affected.
-      </Text>
-      <View style={styles.errorAction}>
-        <Button label="Try again" variant="secondary" onPress={onRetry} />
-      </View>
-    </View>
-  );
-}
-
-function TextButton({
-  label,
-  onPress,
-  style,
-}: {
-  label: string;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.textButton, style, pressed && styles.textButtonPressed]}
-    >
-      <Text variant="label" tone="primary">
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -489,58 +371,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.space.sm,
     marginTop: theme.space.xs,
   },
-  paceLine: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: theme.space.sm,
-    marginTop: theme.space.sm,
-  },
-  paceWord: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
+  paceLine: { marginTop: theme.space.sm },
   ruler: { marginTop: theme.space.xxl },
-  stats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: theme.space.xl,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-  },
-  stat: {
-    flexGrow: 1,
-    flexBasis: theme.sizes.statMinWidth,
-    gap: theme.space.xxs,
-    paddingVertical: theme.space.md,
-  },
-  tabular: { fontVariant: ['tabular-nums'] },
-  semibold: { fontWeight: theme.typography.label.fontWeight },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.space.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border,
-  },
-  sectionHeaderPadded: { alignItems: 'baseline', paddingBottom: theme.space.sm },
-  textButton: { minHeight: theme.sizes.hitTarget, justifyContent: 'center' },
-  textButtonPressed: { opacity: 0.55 },
+  stats: { marginTop: theme.space.xl },
   moreButton: { alignSelf: 'flex-start', paddingVertical: theme.space.md },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: theme.space.lg,
-    paddingBottom: theme.space.xs,
-  },
   emptyLine: { paddingVertical: theme.space.lg },
   emptyTitle: { marginTop: theme.space.sm, maxWidth: theme.sizes.readableMaxWidth },
   emptyAction: { marginTop: theme.space.xl },
-  error: {
-    paddingTop: theme.space.xl,
-    gap: theme.space.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-  },
-  errorTitle: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
-  errorAction: { marginTop: theme.space.xl, alignSelf: 'flex-start' },
 }));

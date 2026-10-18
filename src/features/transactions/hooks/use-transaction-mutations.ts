@@ -83,3 +83,16 @@ export function useDeleteTransaction() {
     onSuccess: () => void syncNow({ pull: false }),
   });
 }
+
+/** Re-queues a transaction whose sync failed: failed → pending → synced. */
+export function useRetryTransaction() {
+  const save = useSaveTransaction();
+  return (item: TransactionListItem) =>
+    save.mutate({
+      id: item.id,
+      amountCents: item.amountCents,
+      categoryId: item.categoryId,
+      note: item.note,
+      occurredAt: item.occurredAt,
+    });
+}

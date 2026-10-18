@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 
 import { Button, ErrorState, LoadingState, Text, TextField } from '@/design-system';
 import { parseAmountToCents } from '@/lib/format';
@@ -39,7 +41,7 @@ export function TransactionForm({ initial, submitLabel, onSubmit }: TransactionF
   };
 
   return (
-    <>
+    <View style={styles.form}>
       <TextField
         label="Amount"
         value={amount}
@@ -49,14 +51,14 @@ export function TransactionForm({ initial, submitLabel, onSubmit }: TransactionF
         autoFocus
         error={submitted && amountCents === null ? 'Enter an amount greater than zero' : null}
       />
-      <Text variant="caption" tone="muted">
-        Category
-      </Text>
-      <CategoryChips
-        categories={categories.data}
-        selectedId={selectedCategory}
-        onSelect={setCategoryId}
-      />
+      <View style={styles.field}>
+        <Text variant="label">Category</Text>
+        <CategoryChips
+          categories={categories.data}
+          selectedId={selectedCategory}
+          onSelect={setCategoryId}
+        />
+      </View>
       <TextField
         label="Note"
         value={note}
@@ -67,6 +69,11 @@ export function TransactionForm({ initial, submitLabel, onSubmit }: TransactionF
         onSubmitEditing={submit}
       />
       <Button label={submitLabel} onPress={submit} />
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  form: { gap: theme.space.xl, paddingTop: theme.space.lg },
+  field: { gap: theme.space.sm },
+}));

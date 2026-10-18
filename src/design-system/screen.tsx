@@ -46,13 +46,12 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     flexGrow: 1,
-    gap: theme.space.lg,
-    paddingHorizontal: theme.space.lg,
-    paddingBottom: rt.insets.bottom + theme.space.lg,
+    paddingHorizontal: theme.space.xl,
+    paddingBottom: rt.insets.bottom + theme.space.xl,
     variants: {
       insetTop: {
-        true: { paddingTop: rt.insets.top + theme.space.lg },
-        false: { paddingTop: theme.space.lg },
+        true: { paddingTop: rt.insets.top + theme.space.sm },
+        false: { paddingTop: theme.space.sm },
       },
     },
   },

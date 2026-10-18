@@ -11,8 +11,18 @@ export function useStackScreenOptions(): StackScreenOptions {
 
   return {
     headerTintColor: theme.colors.primary,
-    headerTitleStyle: { color: theme.colors.text },
-    headerLargeTitleStyle: { color: theme.colors.text },
+    headerTitleStyle: {
+      color: theme.colors.text,
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: theme.typography.headline.fontWeight,
+    },
+    headerLargeTitleStyle: {
+      color: theme.colors.text,
+      fontSize: theme.typography.display.fontSize,
+      fontWeight: theme.typography.display.fontWeight,
+    },
+    headerLargeStyle: { backgroundColor: theme.colors.background },
+    headerLargeTitleShadowVisible: false,
     headerStyle: { backgroundColor: theme.colors.background },
     headerShadowVisible: false,
     contentStyle: { backgroundColor: theme.colors.background },

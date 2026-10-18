@@ -1,7 +1,7 @@
 import { Pressable, ScrollView } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { Text } from '@/design-system';
+import { Swatch, Text } from '@/design-system';
 import type { Category } from '@/lib/db/schema';
 
 /** Simple chip picker. Phase 3 swaps it for @expo/ui Menu (iOS) / BottomSheet (Android). */
@@ -31,11 +31,10 @@ export function CategoryChips({
             accessibilityLabel={c.name}
             accessibilityState={{ selected }}
             onPress={() => onSelect(c.id)}
-            style={styles.chip(selected, c.color)}
+            style={({ pressed }) => [styles.chip(selected), pressed && styles.pressed]}
           >
-            <Text variant="callout" tone={selected ? 'onPrimary' : 'normal'}>
-              {c.name}
-            </Text>
+            <Swatch color={c.color} />
+            <Text variant={selected ? 'label' : 'callout'}>{c.name}</Text>
           </Pressable>
         );
       })}
@@ -45,13 +44,16 @@ export function CategoryChips({
 
 const styles = StyleSheet.create((theme) => ({
   row: { gap: theme.space.sm },
-  chip: (selected: boolean, color: string) => ({
+  chip: (selected: boolean) => ({
     minHeight: theme.sizes.hitTarget,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
     paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: selected ? color : theme.colors.border,
-    backgroundColor: selected ? color : theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderWidth: selected ? 1 : StyleSheet.hairlineWidth,
+    borderColor: selected ? theme.colors.primary : theme.colors.border,
+    backgroundColor: selected ? theme.colors.primaryMuted : theme.colors.surface,
   }),
+  pressed: { opacity: 0.7 },
 }));

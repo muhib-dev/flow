@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { Icon, Text } from '@/design-system';
+import { Icon, Swatch, Text } from '@/design-system';
 import { formatDayLabel, formatMoney } from '@/lib/format';
 
 import type { TransactionListItem } from '../api/transactions-repo';
@@ -51,7 +51,7 @@ export const TransactionRow = memo(function TransactionRow({
       <View style={styles.body}>
         <Text variant="body">{title}</Text>
         <View style={styles.meta}>
-          <View style={styles.swatch(item.categoryColor)} />
+          <Swatch color={item.categoryColor} />
           <Text variant="caption" tone="muted">
             {item.categoryName}
             {showDate ? ` · ${day}` : ''}
@@ -86,12 +86,6 @@ const styles = StyleSheet.create((theme) => ({
   pressed: { backgroundColor: theme.colors.surfaceMuted },
   body: { flex: 1, minWidth: 0 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: theme.space.xs },
-  swatch: (color: string) => ({
-    width: theme.sizes.swatchSm,
-    height: theme.sizes.swatchSm,
-    borderRadius: theme.radius.xs,
-    backgroundColor: color,
-  }),
   failed: { fontWeight: theme.typography.label.fontWeight },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
   amount: { fontVariant: ['tabular-nums'] },
