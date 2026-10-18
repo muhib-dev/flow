@@ -1,16 +1,14 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-const FILL_DURATION_MS = 700;
-export const FILL_EASING = Easing.bezier(0.2, 0.8, 0.2, 1);
+import { MOTION_EASING } from './motion';
 
 /** Pill bar that fills from zero on mount. Turns danger once `value` passes 1. */
 export function ProgressBar({
@@ -19,6 +17,7 @@ export function ProgressBar({
   size = 'md',
   marker,
   delay = 0,
+  onInk = false,
 }: {
   value: number;
   color: string;
@@ -27,8 +26,11 @@ export function ProgressBar({
   marker?: number;
   /** Fill animation delay in ms. */
   delay?: number;
+  /** Track and marker colors for the deep `ink` card. */
+  onInk?: boolean;
 }) {
-  styles.useVariants({ size });
+  const { theme } = useUnistyles();
+  styles.useVariants({ size, onInk });
   const clamped = Math.min(Math.max(value, 0), 1);
   const width = useSharedValue(0);
 
@@ -36,10 +38,10 @@ export function ProgressBar({
     width.set(
       withDelay(
         delay,
-        withTiming(clamped * 100, { duration: FILL_DURATION_MS, easing: FILL_EASING }),
+        withTiming(clamped * 100, { duration: theme.motion.fillMs, easing: MOTION_EASING }),
       ),
     );
-  }, [clamped, delay, width]);
+  }, [clamped, delay, width, theme.motion.fillMs]);
 
   const fillStyle = useAnimatedStyle(() => ({ width: `${width.get()}%` }));
 
@@ -51,7 +53,7 @@ export function ProgressBar({
     >
       <Animated.View style={[styles.fill(value > 1 ? null : color), fillStyle]} />
       {marker != null ? (
-        <View style={styles.marker(Math.min(Math.max(marker, 0), 1), size)} />
+        <View style={[styles.marker(Math.min(Math.max(marker, 0), 1), size), styles.markerTone]} />
       ) : null}
     </View>
   );
@@ -60,8 +62,11 @@ export function ProgressBar({
 const styles = StyleSheet.create((theme) => ({
   track: {
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surfaceMuted,
     variants: {
+      onInk: {
+        true: { backgroundColor: theme.colors.inkTrack },
+        false: { backgroundColor: theme.colors.surfaceMuted },
+      },
       size: {
         sm: { height: theme.sizes.progressHeightSm },
         md: { height: theme.sizes.progressHeight },
@@ -80,8 +85,16 @@ const styles = StyleSheet.create((theme) => ({
       ((size === 'sm' ? theme.sizes.progressHeightSm : theme.sizes.progressHeight) -
         theme.sizes.paceTick) /
       2,
-    width: theme.sizes.tick,
+    width: theme.sizes.tick * 2,
     height: theme.sizes.paceTick,
-    backgroundColor: theme.colors.textMuted,
+    borderRadius: theme.radius.pill,
   }),
+  markerTone: {
+    variants: {
+      onInk: {
+        true: { backgroundColor: theme.colors.onInkMuted },
+        false: { backgroundColor: theme.colors.textSubtle },
+      },
+    },
+  },
 }));

@@ -13,8 +13,6 @@ type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   loading?: boolean;
 };
 
-const PRESSED_SCALE = 0.97;
-
 export function Button({
   label,
   variant = 'primary',
@@ -49,7 +47,7 @@ export function Button({
         disabled={isDisabled}
         style={[styles.button, isDisabled && variant !== 'ghost' && styles.disabled]}
         onPressIn={(e) => {
-          scale.set(withSpring(PRESSED_SCALE));
+          scale.set(withSpring(theme.motion.pressScale));
           onPressIn?.(e);
         }}
         onPressOut={(e) => {
@@ -81,7 +79,8 @@ const styles = StyleSheet.create((theme) => ({
   button: {
     minHeight: theme.sizes.controlHeight,
     paddingHorizontal: theme.space.xl,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
     flexDirection: 'row',
     gap: theme.space.sm,
     alignItems: 'center',

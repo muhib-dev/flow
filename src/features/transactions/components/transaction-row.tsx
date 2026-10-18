@@ -1,8 +1,8 @@
 import { memo } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { Icon, Swatch, Text } from '@/design-system';
+import { Icon, PressableRow, Text } from '@/design-system';
 import { formatDayLabel, formatMoney } from '@/lib/format';
 
 import type { TransactionListItem } from '../api/transactions-repo';
@@ -39,38 +39,39 @@ export const TransactionRow = memo(function TransactionRow({
   const day = formatDayLabel(item.occurredAt);
   const status = pending ? ', syncing' : failed ? ', not synced' : '';
 
+  let meta = item.note ? item.categoryName : '';
+  if (showDate) meta = meta ? `${meta} · ${day}` : day;
+
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableRow
       accessibilityLabel={`${title}, ${item.categoryName}, ${amount}, ${day}${status}`}
       accessibilityHint={retryable ? 'Double tap to retry' : undefined}
       onPress={() => (retryable ? onRetry(item) : onPress(item.id))}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={styles.row}
     >
-      <CategoryBadge icon={item.categoryIcon} color={item.categoryColor} neutral />
+      <CategoryBadge icon={item.categoryIcon} color={item.categoryColor} />
       <View style={styles.body}>
-        <Text variant="body">{title}</Text>
-        <View style={styles.meta}>
-          <Swatch color={item.categoryColor} />
-          <Text variant="caption" tone="muted">
-            {item.categoryName}
-            {showDate ? ` · ${day}` : ''}
+        <Text variant="body" numberOfLines={1}>
+          {title}
+        </Text>
+        {failed ? (
+          <Text variant="caption" weight="semibold" tone="dangerText">
+            {retryable ? 'Not synced · Tap to retry' : 'Not synced'}
           </Text>
-          {failed ? (
-            <Text variant="caption" tone="dangerText" style={styles.failed}>
-              {retryable ? '· Not synced, tap to retry' : '· Not synced'}
-            </Text>
-          ) : null}
-        </View>
+        ) : meta ? (
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
       </View>
       <View style={styles.trailing}>
-        {pending ? <Icon name={PENDING_ICON} size={theme.sizes.iconSm} tone="muted" /> : null}
+        {pending ? <Icon name={PENDING_ICON} size={theme.sizes.iconXs} tone="subtle" /> : null}
         {failed ? <Icon name={FAILED_ICON} size={theme.sizes.iconSm} tone="danger" /> : null}
-        <Text variant="body" tone={pending || failed ? 'muted' : 'normal'} style={styles.amount}>
-          {amount}
+        <Text variant="label" tone={pending || failed ? 'muted' : 'normal'} tabular>
+          −{amount}
         </Text>
       </View>
-    </Pressable>
+    </PressableRow>
   );
 });
 
@@ -81,12 +82,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
     minHeight: theme.sizes.listRow,
     paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.xl,
   },
-  pressed: { backgroundColor: theme.colors.surfaceMuted },
-  body: { flex: 1, minWidth: 0 },
-  meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: theme.space.xs },
-  failed: { fontWeight: theme.typography.label.fontWeight },
+  body: { flex: 1, minWidth: 0, gap: theme.space.xxs },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
-  amount: { fontVariant: ['tabular-nums'] },
 }));

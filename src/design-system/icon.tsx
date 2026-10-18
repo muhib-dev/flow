@@ -7,7 +7,19 @@ export type IconName = SymbolViewProps['name'];
 type IconProps = {
   name: IconName;
   size?: number;
-  tone?: 'normal' | 'muted' | 'primary' | 'danger' | 'success' | 'warningText' | 'onPrimary';
+  tone?:
+    | 'normal'
+    | 'muted'
+    | 'subtle'
+    | 'primary'
+    | 'danger'
+    | 'dangerText'
+    | 'success'
+    | 'successText'
+    | 'warningText'
+    | 'onPrimary'
+    | 'onInk'
+    | 'onInkMuted';
   /** Overrides `tone`, for data-driven colors like categories. */
   color?: string;
 };
@@ -15,11 +27,16 @@ type IconProps = {
 const TONE_COLOR = {
   normal: 'text',
   muted: 'textMuted',
+  subtle: 'textSubtle',
   primary: 'primary',
   danger: 'danger',
+  dangerText: 'dangerText',
   success: 'success',
+  successText: 'successText',
   warningText: 'warningText',
   onPrimary: 'onPrimary',
+  onInk: 'onInk',
+  onInkMuted: 'onInkMuted',
 } as const;
 
 export function Icon({ name, size, tone = 'normal', color }: IconProps) {

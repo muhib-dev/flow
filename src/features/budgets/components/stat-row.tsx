@@ -3,16 +3,28 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { Text } from '@/design-system';
 
-/** Hairline-banded key/value columns that wrap at large text sizes. */
-export function StatRow({ stats }: { stats: { label: string; value: string }[] }) {
+/** Key/value columns split by hairlines; wraps at large text sizes. */
+export function StatRow({
+  stats,
+  onInk = false,
+}: {
+  stats: { label: string; value: string }[];
+  onInk?: boolean;
+}) {
+  styles.useVariants({ onInk });
   return (
     <View style={styles.row}>
-      {stats.map(({ label, value }) => (
-        <View key={label} style={styles.stat} accessible accessibilityLabel={`${label}: ${value}`}>
-          <Text variant="caption" tone="muted">
+      {stats.map(({ label, value }, i) => (
+        <View
+          key={label}
+          style={[styles.stat, i > 0 && styles.divider]}
+          accessible
+          accessibilityLabel={`${label}: ${value}`}
+        >
+          <Text variant="caption" tone={onInk ? 'onInkMuted' : 'muted'}>
             {label}
           </Text>
-          <Text variant="label" style={styles.value}>
+          <Text variant="label" tone={onInk ? 'onInk' : 'normal'} tabular numberOfLines={1}>
             {value}
           </Text>
         </View>
@@ -22,18 +34,20 @@ export function StatRow({ stats }: { stats: { label: string; value: string }[] }
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-  },
+  row: { flexDirection: 'row', flexWrap: 'wrap', rowGap: theme.space.md },
   stat: {
     flexGrow: 1,
     flexBasis: theme.sizes.statMinWidth,
     gap: theme.space.xxs,
-    paddingVertical: theme.space.md,
+    paddingHorizontal: theme.space.md,
   },
-  value: { fontVariant: ['tabular-nums'] },
+  divider: {
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    variants: {
+      onInk: {
+        true: { borderLeftColor: theme.colors.inkTrack },
+        false: { borderLeftColor: theme.colors.separator },
+      },
+    },
+  },
 }));

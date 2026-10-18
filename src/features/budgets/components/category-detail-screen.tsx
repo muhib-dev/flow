@@ -1,17 +1,19 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import {
+  Card,
+  categoryColor,
   EmptyState,
   ErrorState,
   LoadingState,
+  Metric,
   ProgressBar,
-  SectionHeader,
-  Swatch,
   Text,
 } from '@/design-system';
 import type { BudgetSummary } from '@/features/transactions/api/transactions-repo';
+import { CategoryBadge } from '@/features/transactions/components/category-badge';
 import { TransactionList } from '@/features/transactions/components/transaction-list';
 import { useTransactions } from '@/features/transactions/hooks/use-transactions';
 import {
@@ -53,9 +55,10 @@ export function CategoryDetailScreen() {
       <Stack.Screen options={{ title: budget.name }} />
       <TransactionList
         data={list.data}
+        onRefresh={() => Promise.all([summary.refetch(), list.refetch()])}
         ListHeaderComponent={<CategoryHero budget={budget} />}
         ListEmptyComponent={
-          <Text variant="callout" tone="muted" style={styles.empty}>
+          <Text variant="callout" tone="muted" align="center" style={styles.empty}>
             No {budget.name.toLowerCase()} expenses yet.
           </Text>
         }
@@ -74,31 +77,38 @@ function CategoryHero({ budget }: { budget: BudgetSummary }) {
   const over = hasLimit && pace === 'over';
   const remaining = budget.limitCents - budget.spentCents;
 
-  return (
-    <View style={styles.hero}>
-      <View style={styles.label}>
-        <Swatch color={budget.color} />
-        <Text variant="callout" tone="muted">
-          {hasLimit
-            ? `${over ? 'Over budget by' : 'Left to spend'} in ${formatMonthName(month)}`
-            : `Spent in ${formatMonthName(month)}`}
-        </Text>
-      </View>
-      <Text
-        variant="largeNumber"
-        tone={over ? 'dangerText' : 'normal'}
-        adjustsFontSizeToFit
-        numberOfLines={1}
-        style={styles.value}
-      >
-        {formatMoney(hasLimit ? Math.abs(remaining) : budget.spentCents)}
-      </Text>
+  const { theme } = useUnistyles();
+  const label = hasLimit
+    ? `${over ? 'Over budget by' : 'Left to spend'} in ${formatMonthName(month)}`
+    : `Spent in ${formatMonthName(month)}`;
 
+  return (
+    <Card style={styles.hero}>
+      <View style={styles.badge}>
+        <CategoryBadge icon={budget.icon} color={budget.color} />
+      </View>
+      <Metric
+        label={label}
+        value={formatMoney(hasLimit ? Math.abs(remaining) : budget.spentCents)}
+        tone={over ? 'dangerText' : 'normal'}
+        footer={
+          hasLimit ? (
+            <PaceLine pace={pace} spentRatio={ratio} calendarRatio={calendarRatio} />
+          ) : (
+            <Text variant="callout" tone="muted">
+              No budget set for this category.
+            </Text>
+          )
+        }
+      />
       {hasLimit ? (
         <>
-          <PaceLine pace={pace} spentRatio={ratio} calendarRatio={calendarRatio} />
           <View style={styles.bar}>
-            <ProgressBar value={ratio} color={budget.color} marker={calendarRatio} />
+            <ProgressBar
+              value={ratio}
+              color={categoryColor(theme, budget.color)}
+              marker={calendarRatio}
+            />
           </View>
           <View style={styles.stats}>
             <StatRow
@@ -110,26 +120,16 @@ function CategoryHero({ budget }: { budget: BudgetSummary }) {
             />
           </View>
         </>
-      ) : (
-        <Text variant="callout" tone="muted">
-          No budget set for this category.
-        </Text>
-      )}
-
-      <View style={styles.section}>
-        <SectionHeader title="Transactions" />
-      </View>
-    </View>
+      ) : null}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  hero: { paddingHorizontal: theme.space.xl, paddingTop: theme.space.sm },
-  label: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
-  value: { marginTop: theme.space.xs, marginBottom: theme.space.sm },
-  bar: { marginTop: theme.space.xxl },
-  stats: { marginTop: theme.space.xl },
-  section: { marginTop: theme.space.xxxl },
-  empty: { paddingHorizontal: theme.space.xl, paddingVertical: theme.space.lg },
+  hero: { marginTop: theme.space.sm, padding: theme.space.xl },
+  badge: { marginBottom: theme.space.md },
+  bar: { marginTop: theme.space.xl },
+  stats: { marginTop: theme.space.xl, marginHorizontal: -theme.space.md },
+  empty: { paddingVertical: theme.space.xl },
 }));

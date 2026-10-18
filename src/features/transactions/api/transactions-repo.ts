@@ -42,7 +42,10 @@ const toDto = (row: Transaction): TransactionDto => ({
   deletedAt: row.deletedAt,
 });
 
-export function listTransactions(filter?: { categoryId?: string; limit?: number }) {
+export type TransactionFilter = { categoryId?: string; limit?: number; month?: string };
+
+export function listTransactions(filter?: TransactionFilter) {
+  const range = filter?.month ? monthRange(filter.month) : null;
   const query = db
     .select(listColumns)
     .from(transactions)
@@ -51,6 +54,8 @@ export function listTransactions(filter?: { categoryId?: string; limit?: number 
       and(
         isNull(transactions.deletedAt),
         filter?.categoryId ? eq(transactions.categoryId, filter.categoryId) : undefined,
+        range ? gte(transactions.occurredAt, range.start) : undefined,
+        range ? lt(transactions.occurredAt, range.end) : undefined,
       ),
     )
     .orderBy(desc(transactions.occurredAt));
@@ -110,6 +115,21 @@ export async function getMonthSummary(month: string): Promise<BudgetSummary[]> {
     .leftJoin(budgets, and(eq(budgets.categoryId, categories.id), eq(budgets.month, month)))
     .leftJoin(spent, eq(spent.categoryId, categories.id))
     .orderBy(asc(categories.sortOrder));
+}
+
+/** One row per transaction in the month: just what the daily chart needs. */
+export function listMonthAmounts(month: string) {
+  const { start, end } = monthRange(month);
+  return db
+    .select({ amountCents: transactions.amountCents, occurredAt: transactions.occurredAt })
+    .from(transactions)
+    .where(
+      and(
+        isNull(transactions.deletedAt),
+        gte(transactions.occurredAt, start),
+        lt(transactions.occurredAt, end),
+      ),
+    );
 }
 
 /** Writes the row and its outbox entry atomically so a crash can't lose the sync. */

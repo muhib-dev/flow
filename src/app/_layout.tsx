@@ -6,12 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import migrations from '../../drizzle/migrations';
 import { ToastHost } from '@/design-system';
 import { useStackScreenOptions } from '@/design-system/navigation';
 import { useSessionStore } from '@/features/auth/store/session-store';
+import { applyStoredPreferences } from '@/features/settings/store/preferences-store';
 import { useSyncOnReconnect } from '@/features/transactions/hooks/use-sync-on-reconnect';
 import { db } from '@/lib/db/client';
 import { seedDefaults } from '@/lib/db/seed';
@@ -20,11 +21,13 @@ import { queryClient } from '@/lib/query-client';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design-system';
 
 void SplashScreen.preventAutoHideAsync();
+applyStoredPreferences();
 
 export default function RootLayout() {
   const ready = useAppReady();
   const isSignedIn = useSessionStore((s) => s.status === 'signedIn');
   const screenOptions = useStackScreenOptions();
+  const { rt } = useUnistyles();
   useSyncOnReconnect(ready && isSignedIn);
 
   if (!ready) return null;
@@ -45,7 +48,7 @@ export default function RootLayout() {
             </Stack.Protected>
           </Stack>
           <ToastHost />
-          <StatusBar style="auto" />
+          <StatusBar style={rt.themeName === 'dark' ? 'light' : 'dark'} />
         </QueryClientProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>

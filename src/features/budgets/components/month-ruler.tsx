@@ -8,8 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { Text } from '@/design-system';
-import { FILL_EASING } from '@/design-system/progress-bar';
+import { MOTION_EASING, Text } from '@/design-system';
 import { formatShortDay, monthRange } from '@/lib/format';
 
 import type { Pace } from '../api/pace';
@@ -34,7 +33,10 @@ type MonthRulerProps = {
   pace: Pace;
 };
 
-/** Spending against the month: the fill is money spent, the ticks and marker are days gone. */
+/**
+ * Spending against the month: the fill is money spent, the ticks and marker are days gone.
+ * Drawn for the deep `ink` hero card.
+ */
 export function MonthRuler({
   month,
   day,
@@ -56,13 +58,13 @@ export function MonthRuler({
   const overflow = useSharedValue(0);
   const today = useSharedValue(0);
   useEffect(() => {
-    const timing = { duration: FILL_MS, easing: FILL_EASING };
+    const timing = { duration: FILL_MS, easing: MOTION_EASING };
     fill.set(withTiming(fillPct, timing));
     today.set(withTiming(todayPct, timing));
     overflow.set(
       withDelay(
         OVERFLOW_DELAY_MS,
-        withTiming(overflowPct, { duration: OVERFLOW_MS, easing: FILL_EASING }),
+        withTiming(overflowPct, { duration: OVERFLOW_MS, easing: MOTION_EASING }),
       ),
     );
   }, [fill, fillPct, overflow, overflowPct, today, todayPct]);
@@ -106,7 +108,7 @@ export function MonthRuler({
       <Animated.View style={[styles.marker, markerStyle]} />
       <View style={styles.labels}>
         {todayPct > HIDE_START_AT ? (
-          <Text variant="caption" tone="muted" style={styles.start}>
+          <Text variant="caption" tone="onInkMuted" style={styles.start}>
             {formatShortDay(start)}
           </Text>
         ) : null}
@@ -114,12 +116,12 @@ export function MonthRuler({
           style={[styles.today, labelStyle]}
           onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)}
         >
-          <Text variant="caption" style={styles.todayText} numberOfLines={1}>
+          <Text variant="caption" weight="semibold" tone="onInk" numberOfLines={1}>
             Today · {day}
           </Text>
         </Animated.View>
         {todayPct < HIDE_END_AT ? (
-          <Text variant="caption" tone="muted" style={styles.end}>
+          <Text variant="caption" tone="onInkMuted" style={styles.end}>
             {formatShortDay(lastDay)}
           </Text>
         ) : null}
@@ -129,11 +131,11 @@ export function MonthRuler({
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { gap: theme.space.xs },
+  root: { gap: theme.space.sm },
   track: {
     height: theme.sizes.progressHeight,
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surfaceMuted,
+    backgroundColor: theme.colors.inkTrack,
     overflow: 'hidden',
   },
   fill: (above: boolean) => ({
@@ -141,7 +143,8 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: above ? theme.colors.warning : theme.colors.primary,
+    borderRadius: theme.radius.pill,
+    backgroundColor: above ? theme.colors.warning : theme.colors.inkAccent,
   }),
   overflow: (left: number) => ({
     position: 'absolute',
@@ -157,19 +160,22 @@ const styles = StyleSheet.create((theme) => ({
     left: `${x}%`,
     width: theme.sizes.tick,
     height: major ? theme.sizes.tickMajor : theme.sizes.tickMinor,
-    backgroundColor: past ? theme.colors.textMuted : theme.colors.border,
+    backgroundColor: past ? theme.colors.onInkMuted : theme.colors.inkTrack,
   }),
+  // A ringed dot riding the track at today's position.
   marker: {
     position: 'absolute',
-    top: -theme.space.sm,
-    width: theme.sizes.rulerMarkerWidth,
-    height: theme.sizes.rulerMarkerHeight,
-    marginLeft: -theme.sizes.rulerMarkerWidth / 2,
-    backgroundColor: theme.colors.text,
+    top: (theme.sizes.progressHeight - theme.sizes.rulerMarker) / 2,
+    width: theme.sizes.rulerMarker,
+    height: theme.sizes.rulerMarker,
+    marginLeft: -theme.sizes.rulerMarker / 2,
+    borderRadius: theme.radius.pill,
+    borderWidth: theme.sizes.tick * 2,
+    borderColor: theme.colors.ink,
+    backgroundColor: theme.colors.onInk,
   },
   labels: { height: theme.typography.caption.lineHeight },
   start: { position: 'absolute', left: 0 },
   end: { position: 'absolute', right: 0 },
   today: { position: 'absolute', top: 0 },
-  todayText: { fontWeight: theme.typography.label.fontWeight },
 }));

@@ -1,12 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import { getTransaction, listCategories, listTransactions } from '../api/transactions-repo';
+import {
+  getTransaction,
+  listCategories,
+  listTransactions,
+  type TransactionFilter,
+} from '../api/transactions-repo';
 import { categoryKeys, transactionKeys } from './query-keys';
 
-export function useTransactions(filter: { categoryId?: string; limit?: number } = {}) {
+export function useTransactions(filter: TransactionFilter = {}) {
   return useQuery({
     queryKey: transactionKeys.list(filter),
     queryFn: () => listTransactions(filter),
+    // Switching month or category keeps the old rows up until the new ones land.
+    placeholderData: keepPreviousData,
   });
 }
 

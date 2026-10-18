@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { getMonthSummary } from '@/features/transactions/api/transactions-repo';
 import { transactionKeys } from '@/features/transactions/hooks/query-keys';
@@ -8,5 +8,6 @@ export function useMonthSummary(month = currentMonth()) {
   return useQuery({
     queryKey: transactionKeys.summary(month),
     queryFn: () => getMonthSummary(month),
+    placeholderData: keepPreviousData,
   });
 }

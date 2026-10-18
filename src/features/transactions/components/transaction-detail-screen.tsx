@@ -5,13 +5,14 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import {
   Button,
+  Card,
   EmptyState,
   ErrorState,
+  ListGroup,
   ListRow,
   LoadingState,
   Screen,
   Section,
-  Swatch,
   Text,
   TextButton,
 } from '@/design-system';
@@ -23,6 +24,7 @@ import {
   useSaveTransaction,
 } from '../hooks/use-transaction-mutations';
 import { useTransaction } from '../hooks/use-transactions';
+import { CategoryBadge } from './category-badge';
 import { TransactionForm } from './transaction-form';
 
 const STATUS = {
@@ -72,15 +74,10 @@ export function TransactionDetailScreen() {
         />
       ) : (
         <>
-          <View style={styles.hero}>
-            <View style={styles.label}>
-              <Swatch color={data.categoryColor} />
-              <Text variant="callout" tone="muted">
-                {data.categoryName} · {formatDayLabel(data.occurredAt)}
-              </Text>
-            </View>
+          <Card style={styles.hero}>
+            <CategoryBadge icon={data.categoryIcon} color={data.categoryColor} />
             <Text
-              variant="largeNumber"
+              variant="heroNumber"
               tone={data.syncStatus === 'synced' ? 'normal' : 'muted'}
               adjustsFontSizeToFit
               numberOfLines={1}
@@ -88,20 +85,29 @@ export function TransactionDetailScreen() {
             >
               {formatMoney(data.amountCents)}
             </Text>
-            {data.note ? <Text variant="body">{data.note}</Text> : null}
-          </View>
+            <Text variant="callout" tone="muted">
+              {data.categoryName} · {formatDayLabel(data.occurredAt)}
+            </Text>
+            {data.note ? (
+              <Text variant="body" align="center" style={styles.note}>
+                {data.note}
+              </Text>
+            ) : null}
+          </Card>
 
-          <Section title="Details" style={styles.section}>
-            <ListRow label="Category" value={data.categoryName} />
-            <ListRow label="Date" value={formatDate(data.occurredAt)} />
-            <ListRow
-              label="Status"
-              value={failed ? 'Not synced, tap to retry' : status.label}
-              valueTone={status.tone}
-              onPress={failed ? () => retry(data) : undefined}
-              chevron={false}
-              accessibilityHint={failed ? 'Double tap to retry' : undefined}
-            />
+          <Section title="Details">
+            <ListGroup>
+              <ListRow label="Category" value={data.categoryName} />
+              <ListRow label="Date" value={formatDate(data.occurredAt)} />
+              <ListRow
+                label="Status"
+                value={failed ? 'Not synced, tap to retry' : status.label}
+                valueTone={status.tone}
+                onPress={failed ? () => retry(data) : undefined}
+                chevron={false}
+                accessibilityHint={failed ? 'Double tap to retry' : undefined}
+              />
+            </ListGroup>
           </Section>
 
           <View style={styles.actions}>
@@ -123,10 +129,9 @@ export function TransactionDetailScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  hero: { gap: theme.space.xs },
-  label: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
-  amount: { fontVariant: ['tabular-nums'] },
-  section: { marginTop: theme.space.xxxl },
+  hero: { alignItems: 'center', gap: theme.space.xs, paddingVertical: theme.space.xl },
+  amount: { marginTop: theme.space.sm },
+  note: { marginTop: theme.space.sm },
   actions: { marginTop: theme.space.xl, gap: theme.space.sm },
   delete: { alignSelf: 'center' },
 }));

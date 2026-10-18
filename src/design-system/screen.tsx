@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import type { ReactElement, ReactNode } from 'react';
+import { ScrollView, View, type RefreshControlProps } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 type ScreenProps = {
@@ -10,6 +10,8 @@ type ScreenProps = {
   insetTop?: boolean;
   /** Skip the background color so decoration behind the screen shows through. */
   transparent?: boolean;
+  /** Pull-to-refresh, scroll screens only. */
+  refreshControl?: ReactElement<RefreshControlProps>;
 };
 
 export function Screen({
@@ -17,6 +19,7 @@ export function Screen({
   scroll = false,
   insetTop = false,
   transparent = false,
+  refreshControl,
 }: ScreenProps) {
   styles.useVariants({ insetTop, transparent });
   if (scroll) {
@@ -26,6 +29,7 @@ export function Screen({
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>
@@ -46,8 +50,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: theme.space.xl,
-    paddingBottom: rt.insets.bottom + theme.space.xl,
+    paddingHorizontal: theme.space.gutter,
+    paddingBottom: rt.insets.bottom + theme.space.xxl,
     variants: {
       insetTop: {
         true: { paddingTop: rt.insets.top + theme.space.sm },

@@ -13,6 +13,7 @@ export function AddExpenseButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="Add expense"
       onPress={onPress}
+      android_ripple={{ color: theme.colors.onPrimaryMuted }}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
       <Icon name={ADD_ICON} size={theme.sizes.iconMd} tone="onPrimary" />
@@ -26,17 +27,18 @@ export function AddExpenseButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create((theme) => ({
   fab: {
     position: 'absolute',
-    right: theme.space.lg,
-    bottom: theme.space.lg,
+    right: theme.space.gutter,
+    bottom: theme.space.gutter,
     height: theme.sizes.fabHeight,
     paddingLeft: theme.space.lg,
-    paddingRight: theme.space.xl - theme.space.xs,
+    paddingRight: theme.space.xl,
     borderRadius: theme.radius.lg,
+    overflow: 'hidden',
     backgroundColor: theme.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,
     boxShadow: theme.shadows.fab,
   },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: theme.opacity.pressed },
 }));

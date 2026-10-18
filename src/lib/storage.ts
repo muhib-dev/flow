@@ -7,4 +7,5 @@ export const storage = {
   remove: (key: StorageKey) => Storage.removeItemSync(key),
 };
 
-export type StorageKey = 'session.email' | 'sync.lastPulledAt';
+export type StorageKey =
+  'session.email' | 'sync.lastPulledAt' | 'prefs.appearance' | 'prefs.currency';

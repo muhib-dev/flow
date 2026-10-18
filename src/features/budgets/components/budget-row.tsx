@@ -1,13 +1,12 @@
 import { memo } from 'react';
-import { Pressable, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { View } from 'react-native';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { ProgressBar, Text } from '@/design-system';
+import { categoryColor, PressableRow, ProgressBar, Text } from '@/design-system';
+import { CategoryBadge } from '@/features/transactions/components/category-badge';
 import { formatMoneyShort } from '@/lib/format';
 
 import type { RankedBudget } from '../api/pace';
-
-const BAR_DELAY_MS = 150;
 
 export const BudgetRow = memo(function BudgetRow({
   budget,
@@ -19,73 +18,66 @@ export const BudgetRow = memo(function BudgetRow({
   calendarRatio: number;
   onPress: (categoryId: string) => void;
 }) {
+  const { theme } = useUnistyles();
   const over = budget.pace === 'over';
   const above = budget.pace === 'above';
   const remaining = budget.limitCents - budget.spentCents;
   const right = over
-    ? `Over by ${formatMoneyShort(-remaining)}`
+    ? `${formatMoneyShort(-remaining)} over`
     : `${formatMoneyShort(remaining)} left`;
   const sub = `${formatMoneyShort(budget.spentCents)} of ${formatMoneyShort(budget.limitCents)}`;
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableRow
       accessibilityLabel={`${budget.name}: ${sub}, ${right}${above ? ', above pace' : ''}`}
       onPress={() => onPress(budget.categoryId)}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={styles.row}
     >
-      <View style={styles.inner}>
+      <CategoryBadge icon={budget.icon} color={budget.color} />
+      <View style={styles.body}>
         <View style={styles.line}>
-          <Text variant="body">{budget.name}</Text>
-          <Text
-            variant="label"
-            tone={over ? 'dangerText' : 'normal'}
-            style={[styles.right, styles.tabular]}
-          >
+          <Text variant="body" numberOfLines={1} style={styles.name}>
+            {budget.name}
+          </Text>
+          <Text variant="label" tone={over ? 'dangerText' : 'normal'} tabular>
             {right}
           </Text>
         </View>
         <ProgressBar
           value={budget.ratio}
-          color={budget.color}
+          color={categoryColor(theme, budget.color)}
           size="sm"
           marker={calendarRatio}
-          delay={BAR_DELAY_MS}
+          delay={theme.motion.barDelayMs}
         />
-        <View style={styles.subLine}>
-          <Text variant="caption" tone="muted" style={styles.tabular}>
+        <View style={styles.line}>
+          <Text variant="caption" tone="muted" tabular>
             {sub}
           </Text>
           {above ? (
-            <Text variant="caption" tone="warningText" style={styles.flag}>
-              · Above pace
+            <Text variant="caption" weight="semibold" tone="warningText">
+              Above pace
             </Text>
           ) : null}
         </View>
       </View>
-    </Pressable>
+    </PressableRow>
   );
 });
 
 const styles = StyleSheet.create((theme) => ({
-  // Full-bleed: the parent cancels the screen gutter so the press state reaches the edges.
-  row: { paddingHorizontal: theme.space.xl },
-  pressed: { backgroundColor: theme.colors.surfaceMuted },
-  inner: {
-    gap: theme.space.sm,
-    paddingVertical: theme.space.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.md,
+    paddingVertical: theme.space.md,
   },
+  body: { flex: 1, minWidth: 0, gap: theme.space.sm },
   line: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'baseline',
-    columnGap: theme.space.md,
-    rowGap: theme.space.xs,
+    justifyContent: 'space-between',
+    gap: theme.space.md,
   },
-  subLine: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xs },
-  right: { marginLeft: 'auto' },
-  flag: { fontWeight: theme.typography.label.fontWeight },
-  tabular: { fontVariant: ['tabular-nums'] },
+  name: { flexShrink: 1 },
 }));

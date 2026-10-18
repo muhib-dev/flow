@@ -1,18 +1,35 @@
 import { getLocales } from 'expo-localization';
 
 const locale = getLocales()[0];
-const currency = locale?.currencyCode ?? 'USD';
 
-const moneyFormatter = new Intl.NumberFormat(locale?.languageTag, {
-  style: 'currency',
-  currency,
-});
-const wholeMoneyFormatter = new Intl.NumberFormat(locale?.languageTag, {
-  style: 'currency',
-  currency,
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
+/** The device's currency; the user can override it in Settings. */
+export const deviceCurrency = locale?.currencyCode ?? 'USD';
+
+let moneyFormatter = buildMoneyFormatter(deviceCurrency, false);
+let wholeMoneyFormatter = buildMoneyFormatter(deviceCurrency, true);
+
+function buildMoneyFormatter(code: string, whole: boolean) {
+  return new Intl.NumberFormat(locale?.languageTag, {
+    style: 'currency',
+    currency: code,
+    ...(whole ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : null),
+  });
+}
+
+/** Display currency for every amount. Amounts are stored as plain cents, so nothing converts. */
+export function setCurrency(code: string) {
+  moneyFormatter = buildMoneyFormatter(code, false);
+  wholeMoneyFormatter = buildMoneyFormatter(code, true);
+}
+
+/** "$" for USD, "€" for EUR, in the device locale. */
+export function currencySymbol(code: string) {
+  const parts = new Intl.NumberFormat(locale?.languageTag, {
+    style: 'currency',
+    currency: code,
+  }).formatToParts(0);
+  return parts.find((p) => p.type === 'currency')?.value ?? code;
+}
 const dateFormatter = new Intl.DateTimeFormat(locale?.languageTag, {
   day: 'numeric',
   month: 'short',
@@ -96,4 +113,12 @@ export function monthProgress(now = new Date()) {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const day = now.getDate();
   return { day, daysInMonth, daysLeft: daysInMonth - day + 1 };
+}
+
+/** "muhib.ullah@x.com" → "MU". */
+export function initialsOf(email: string | null) {
+  const local = email?.split('@')[0] ?? '';
+  const parts = local.split(/[._-]+/).filter(Boolean);
+  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : local.slice(0, 2);
+  return letters.toUpperCase();
 }

@@ -52,6 +52,7 @@ const styles = StyleSheet.create((theme) => ({
     height,
     marginTop,
     borderRadius: pill ? theme.radius.pill : theme.radius.sm,
+    borderCurve: 'continuous',
     backgroundColor: theme.colors.surfaceMuted,
   }),
 }));

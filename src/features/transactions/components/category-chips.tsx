@@ -1,59 +1,94 @@
-import { Pressable, ScrollView } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import * as Haptics from 'expo-haptics';
+import { Pressable, ScrollView, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { Swatch, Text } from '@/design-system';
+import { categoryColor, Swatch, Text } from '@/design-system';
 import type { Category } from '@/lib/db/schema';
 
-/** Simple chip picker. Phase 3 swaps it for @expo/ui Menu (iOS) / BottomSheet (Android). */
+/** Horizontally scrolling pill chips. With `allLabel`, a leading chip clears the selection. */
 export function CategoryChips({
   categories,
   selectedId,
   onSelect,
+  allLabel,
+  onSelectAll,
+  contentStyle,
 }: {
   categories: Category[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  allLabel?: string;
+  onSelectAll?: () => void;
+  contentStyle?: StyleProp<ViewStyle>;
 }) {
+  const { theme } = useUnistyles();
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
+      contentContainerStyle={[styles.row, contentStyle]}
       accessibilityRole="radiogroup"
       accessibilityLabel="Category"
     >
-      {categories.map((c) => {
-        const selected = c.id === selectedId;
-        return (
-          <Pressable
-            key={c.id}
-            accessibilityRole="radio"
-            accessibilityLabel={c.name}
-            accessibilityState={{ selected }}
-            onPress={() => onSelect(c.id)}
-            style={({ pressed }) => [styles.chip(selected), pressed && styles.pressed]}
-          >
-            <Swatch color={c.color} />
-            <Text variant={selected ? 'label' : 'callout'}>{c.name}</Text>
-          </Pressable>
-        );
-      })}
+      {allLabel && onSelectAll ? (
+        <Chip label={allLabel} selected={selectedId == null} onPress={onSelectAll} />
+      ) : null}
+      {categories.map((c) => (
+        <Chip
+          key={c.id}
+          label={c.name}
+          color={categoryColor(theme, c.color)}
+          selected={c.id === selectedId}
+          onPress={() => onSelect(c.id)}
+        />
+      ))}
     </ScrollView>
+  );
+}
+
+function Chip({
+  label,
+  color,
+  selected,
+  onPress,
+}: {
+  label: string;
+  color?: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.chip(selected), pressed && styles.pressed]}
+    >
+      {color ? <Swatch color={color} /> : null}
+      <Text variant="callout" weight="semibold" style={selected && styles.selectedLabel}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   row: { gap: theme.space.sm },
   chip: (selected: boolean) => ({
-    minHeight: theme.sizes.hitTarget,
+    minHeight: theme.sizes.hitTarget - theme.space.xs,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,
     paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.md,
-    borderWidth: selected ? 1 : StyleSheet.hairlineWidth,
-    borderColor: selected ? theme.colors.primary : theme.colors.border,
-    backgroundColor: selected ? theme.colors.primaryMuted : theme.colors.surface,
+    borderRadius: theme.radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: selected ? theme.colors.text : theme.colors.border,
+    backgroundColor: selected ? theme.colors.text : theme.colors.surface,
   }),
-  pressed: { opacity: 0.7 },
+  selectedLabel: { color: theme.colors.background },
+  pressed: { opacity: theme.opacity.pressed },
 }));

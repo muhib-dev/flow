@@ -26,7 +26,7 @@ export function TextButton({
   );
 }
 
-/** Headline title over a hairline, with an optional right detail or text action. */
+/** Section title with an optional right-side detail or text action. Sits above a card. */
 export function SectionHeader({
   title,
   detail,
@@ -39,12 +39,12 @@ export function SectionHeader({
   action?: Action;
 }) {
   return (
-    <View style={[styles.header, !action && styles.headerPlain]}>
-      <Text variant="headline" accessibilityRole="header">
+    <View style={styles.header}>
+      <Text variant="headline" accessibilityRole="header" style={styles.title}>
         {title}
       </Text>
       {detail ? (
-        <Text variant="caption" tone={detailTone} style={styles.semibold}>
+        <Text variant="caption" weight="semibold" tone={detailTone}>
           {detail}
         </Text>
       ) : null}
@@ -53,45 +53,51 @@ export function SectionHeader({
   );
 }
 
-/**
- * A titled group of full-bleed rows. Children cancel the screen gutter so their
- * press state reaches the screen edges; rows pad themselves back in.
- */
+/** A titled block: header, then its card(s). Stack sections with `space.section` between. */
 export function Section({
   title,
   detail,
   detailTone,
   action,
+  footer,
   children,
   style,
 }: {
-  title: string;
+  title?: string;
   detail?: string;
   detailTone?: TextProps['tone'];
   action?: Action;
+  /** Caption under the card, like an iOS grouped-table footer. */
+  footer?: string;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={style}>
-      <SectionHeader title={title} detail={detail} detailTone={detailTone} action={action} />
-      <View style={styles.bleed}>{children}</View>
+    <View style={[styles.section, style]}>
+      {title ? (
+        <SectionHeader title={title} detail={detail} detailTone={detailTone} action={action} />
+      ) : null}
+      {children}
+      {footer ? (
+        <Text variant="caption" tone="muted" style={styles.footer}>
+          {footer}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   textButton: { minHeight: theme.sizes.hitTarget, justifyContent: 'center' },
-  pressed: { opacity: 0.55 },
+  pressed: { opacity: theme.opacity.pressed },
+  section: { marginTop: theme.space.section },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: theme.space.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border,
+    minHeight: theme.sizes.hitTarget,
+    paddingHorizontal: theme.space.xs,
   },
-  headerPlain: { alignItems: 'baseline', paddingBottom: theme.space.sm },
-  semibold: { fontWeight: theme.typography.label.fontWeight },
-  bleed: { marginHorizontal: -theme.space.xl },
+  title: { flex: 1 },
+  footer: { marginTop: theme.space.sm, paddingHorizontal: theme.space.lg },
 }));

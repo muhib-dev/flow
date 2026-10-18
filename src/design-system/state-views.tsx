@@ -2,52 +2,80 @@ import { View, type DimensionValue } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { Button } from './button';
-import { Icon } from './icon';
+import { Card } from './card';
+import { Icon, type IconName } from './icon';
 import { Skeleton } from './skeleton';
 import { Text } from './text';
+import { withAlpha } from './theme';
 
 const CLOUD_OFF_ICON = { ios: 'icloud.slash', android: 'cloud_off', web: 'cloud_off' } as const;
-const SKELETON_ROWS: DimensionValue[] = ['40%', '52%', '34%', '46%'];
-const SKELETON_TITLE_WIDTH = 72;
-const SKELETON_VALUE_WIDTH = 64;
-const SKELETON_LINE = 14;
-const SKELETON_SUB_LINE = 12;
+const TRAY_ICON = { ios: 'tray', android: 'inbox', web: 'inbox' } as const;
+const SKELETON_ROWS: DimensionValue[] = ['44%', '58%', '36%', '50%', '40%'];
+const SKELETON_VALUE_WIDTH = 56;
+const SKELETON_HERO_LABEL = 112;
+const SKELETON_HERO_VALUE = 176;
+const BADGE_ALPHA = 0.12;
 
-/** Hairline rows of pulsing blocks, roughly the shape of a Ledger list. */
+/** Card-shaped placeholder: a hero figure over a list of rows. */
 export function LoadingState({ label = 'Loading' }: { label?: string }) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.root} accessibilityLabel={label} accessibilityState={{ busy: true }}>
-      <Skeleton width={SKELETON_TITLE_WIDTH} height={theme.space.lg} />
-      {SKELETON_ROWS.map((width, i) => (
-        <View key={i} style={styles.skeletonRow}>
-          <View style={styles.skeletonLine}>
-            <Skeleton width={width} height={SKELETON_LINE} />
-            <Skeleton width={SKELETON_VALUE_WIDTH} height={SKELETON_LINE} />
-          </View>
-          <Skeleton width="30%" height={SKELETON_SUB_LINE} />
-        </View>
-      ))}
+      <Skeleton width={SKELETON_HERO_LABEL} height={theme.typography.callout.fontSize} />
+      <Skeleton
+        width={SKELETON_HERO_VALUE}
+        height={theme.typography.largeNumber.fontSize}
+        marginTop={theme.space.sm}
+      />
+      <Card padded={false} style={styles.card}>
+        {SKELETON_ROWS.map((width, i) => (
+          <SkeletonRow key={i} width={width} />
+        ))}
+      </Card>
     </View>
   );
 }
 
+/** One list row placeholder: badge, two text lines, trailing value. */
+export function SkeletonRow({ width }: { width: DimensionValue }) {
+  const { theme } = useUnistyles();
+  return (
+    <View style={styles.skeletonRow}>
+      <Skeleton width={theme.sizes.categoryBadge} height={theme.sizes.categoryBadge} />
+      <View style={styles.skeletonText}>
+        <Skeleton width={width} height={theme.typography.callout.fontSize} />
+        <Skeleton width="28%" height={theme.typography.caption.fontSize} />
+      </View>
+      <Skeleton width={SKELETON_VALUE_WIDTH} height={theme.typography.callout.fontSize} />
+    </View>
+  );
+}
+
+/** Centered glyph in a tinted circle, a title, an explanation and an optional action. */
 export function EmptyState({
   title,
   message,
+  icon = TRAY_ICON,
   actionLabel,
   onAction,
 }: {
   title: string;
   message?: string;
+  icon?: IconName;
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const { theme } = useUnistyles();
   return (
-    <View style={styles.root}>
-      <Text variant="headline">{title}</Text>
+    <View style={[styles.root, styles.centered]}>
+      <View style={styles.badge(withAlpha(theme.colors.primary, BADGE_ALPHA))}>
+        <Icon name={icon} size={theme.sizes.iconLg} tone="primary" />
+      </View>
+      <Text variant="title" align="center" style={styles.title}>
+        {title}
+      </Text>
       {message ? (
-        <Text variant="callout" tone="muted" style={styles.message}>
+        <Text variant="callout" tone="muted" align="center" style={styles.message}>
           {message}
         </Text>
       ) : null}
@@ -71,16 +99,18 @@ export function ErrorState({
 }) {
   const { theme } = useUnistyles();
   return (
-    <View style={[styles.root, styles.error]}>
-      <View style={styles.errorTitle}>
-        <Icon name={CLOUD_OFF_ICON} size={theme.sizes.iconControl} tone="muted" />
-        <Text variant="headline">{title}</Text>
+    <View style={[styles.root, styles.centered]}>
+      <View style={styles.badge(theme.colors.dangerMuted)}>
+        <Icon name={CLOUD_OFF_ICON} size={theme.sizes.iconLg} tone="dangerText" />
       </View>
-      <Text variant="callout" tone="muted" style={styles.message}>
+      <Text variant="title" align="center" style={styles.title}>
+        {title}
+      </Text>
+      <Text variant="callout" tone="muted" align="center" style={styles.message}>
         {message ?? 'Check your connection and try again.'}
       </Text>
       {onRetry ? (
-        <View style={[styles.action, styles.actionStart]}>
+        <View style={styles.action}>
           <Button label="Try again" variant="outline" onPress={onRetry} />
         </View>
       ) : null}
@@ -91,23 +121,34 @@ export function ErrorState({
 const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
-    paddingHorizontal: theme.space.xl,
-    paddingTop: theme.space.xl,
+    paddingHorizontal: theme.space.gutter,
+    paddingTop: theme.space.lg,
     backgroundColor: theme.colors.background,
   },
-  message: { marginTop: theme.space.xs, maxWidth: theme.sizes.formMaxWidth },
-  action: { marginTop: theme.space.xl },
-  actionStart: { alignSelf: 'flex-start' },
-  error: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.space.xl,
+    paddingBottom: theme.space.xxxl,
   },
-  errorTitle: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
+  badge: (background: string) => ({
+    width: theme.sizes.emptyBadge,
+    height: theme.sizes.emptyBadge,
+    borderRadius: theme.radius.pill,
+    backgroundColor: background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  }),
+  title: { marginTop: theme.space.lg },
+  message: { marginTop: theme.space.sm, maxWidth: theme.sizes.readableMaxWidth },
+  action: { marginTop: theme.space.xl, minWidth: theme.sizes.readableMaxWidth / 2 },
+  card: { marginTop: theme.space.xl },
   skeletonRow: {
-    gap: theme.space.sm,
-    paddingVertical: theme.space.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.md,
+    minHeight: theme.sizes.listRow,
+    paddingHorizontal: theme.space.lg,
   },
-  skeletonLine: { flexDirection: 'row', justifyContent: 'space-between' },
+  skeletonText: { flex: 1, gap: theme.space.sm },
 }));

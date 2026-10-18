@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { Icon } from './icon';
+import { PressableRow } from './pressable-row';
 import { Text, type TextProps } from './text';
 
 const CHEVRON_ICON = {
@@ -13,13 +14,17 @@ const CHEVRON_ICON = {
 
 type ListRowProps = {
   label: string;
+  /** Second line under the label. */
+  subtitle?: string;
   /** Right-aligned value. */
   value?: string;
   valueTone?: TextProps['tone'];
   /** Label color for action rows ("Sync now", "Sign out"). */
   tone?: 'normal' | 'primary' | 'dangerText';
-  /** Swatch, icon or glyph drawn before the label. */
+  /** Badge, icon or glyph drawn before the label. */
   leading?: ReactNode;
+  /** Custom right-side content, drawn after `value`. */
+  trailing?: ReactNode;
   onPress?: () => void;
   /** Defaults to on for pressable navigation rows. */
   chevron?: boolean;
@@ -28,13 +33,15 @@ type ListRowProps = {
   accessibilityHint?: string;
 };
 
-/** Full-bleed hairline row. Place inside a `Section` so it can reach the screen edges. */
+/** Settings-style row. Stack inside a `ListGroup` for the rounded card and separators. */
 export function ListRow({
   label,
+  subtitle,
   value,
   valueTone = 'muted',
   tone = 'normal',
   leading,
+  trailing,
   onPress,
   chevron = onPress != null && tone === 'normal',
   loading = false,
@@ -43,48 +50,48 @@ export function ListRow({
 }: ListRowProps) {
   const { theme } = useUnistyles();
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
+    <PressableRow
       accessibilityLabel={accessibilityLabel ?? (value ? `${label}, ${value}` : label)}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ busy: loading, disabled: loading }}
-      disabled={!onPress || loading}
+      disabled={loading}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={styles.inner}>
         {leading}
-        <Text variant="body" tone={tone} style={styles.label}>
-          {label}
-        </Text>
+        <View style={styles.text}>
+          <Text variant="body" tone={tone} weight={tone === 'normal' ? undefined : 'semibold'}>
+            {label}
+          </Text>
+          {subtitle ? (
+            <Text variant="caption" tone="muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
         {value ? (
-          <Text variant="callout" tone={valueTone} style={styles.value}>
+          <Text variant="callout" tone={valueTone} tabular style={styles.value} numberOfLines={1}>
             {value}
           </Text>
         ) : null}
+        {trailing}
         {loading ? <ActivityIndicator color={theme.colors.textMuted} /> : null}
         {chevron && !loading ? (
-          <Icon name={CHEVRON_ICON} size={theme.sizes.iconSm} tone="muted" />
+          <Icon name={CHEVRON_ICON} size={theme.sizes.iconSm} tone="subtle" />
         ) : null}
       </View>
-    </Pressable>
+    </PressableRow>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: { paddingHorizontal: theme.space.xl },
-  pressed: { backgroundColor: theme.colors.surfaceMuted },
   inner: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
-    columnGap: theme.space.md,
-    rowGap: theme.space.xs,
-    minHeight: theme.sizes.hitTarget,
-    paddingVertical: theme.space.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border,
+    gap: theme.space.md,
+    minHeight: theme.sizes.listRowCompact,
+    paddingVertical: theme.space.sm,
   },
-  label: { flexShrink: 1 },
-  value: { marginLeft: 'auto', fontVariant: ['tabular-nums'] },
+  text: { flex: 1, minWidth: 0, gap: theme.space.xxs },
+  value: { flexShrink: 1, maxWidth: '55%' },
 }));

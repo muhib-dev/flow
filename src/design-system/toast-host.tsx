@@ -35,7 +35,7 @@ function ToastItem({ toast }: { toast: Toast }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={toast.action.label}
-          hitSlop={8}
+          style={styles.action}
           onPress={() => {
             toast.action?.onPress();
             dismiss(toast.id);
@@ -55,7 +55,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     position: 'absolute',
     left: theme.space.lg,
     right: theme.space.lg,
-    bottom: rt.insets.bottom + theme.space.xxxl * 2,
+    // Clears the tab bar and docked Add button.
+    bottom: rt.insets.bottom + theme.sizes.controlHeight + theme.space.xxxl,
     gap: theme.space.sm,
   },
   toast: {
@@ -64,7 +65,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.space.md,
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.md,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    boxShadow: theme.shadows.popover,
     variants: {
       tone: {
         info: { backgroundColor: theme.colors.text },
@@ -74,4 +77,5 @@ const styles = StyleSheet.create((theme, rt) => ({
     },
   },
   message: { flex: 1 },
+  action: { minHeight: theme.sizes.hitTarget, justifyContent: 'center' },
 }));
