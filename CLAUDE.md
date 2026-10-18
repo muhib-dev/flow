@@ -7,7 +7,7 @@ Expo Router (typed routes, native tabs, API routes for the mock server), TanStac
 Drizzle + expo-sqlite, expo-sqlite/kv-store (key/values), expo-secure-store (secrets), expo-network,
 Reanimated 4 + react-native-worklets, Gesture Handler, Unistyles 3, expo-image, FlashList v2,
 react-native-keyboard-controller, @expo/ui (BottomSheet, Menu, Picker, DateTimePicker, SegmentedControl, Slider),
-@shopify/react-native-skia, expo-widgets, expo-observe, Maestro, Jest (jest-expo) + RNTL.
+react-native-svg, expo-widgets, expo-observe, Maestro, Jest (jest-expo) + RNTL.
 
 ## Library selection (Expo first)
 

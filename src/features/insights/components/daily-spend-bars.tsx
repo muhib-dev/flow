@@ -1,13 +1,13 @@
-import { Canvas, DashPathEffect, Group, Line, RoundedRect, vec } from '@shopify/react-native-skia';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import {
-  useDerivedValue,
+import Animated, {
+  useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Line, Rect } from 'react-native-svg';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { MOTION_EASING, Text } from '@/design-system';
@@ -42,7 +42,7 @@ export function DailySpendBars({ days, average }: { days: DaySpend[]; average: n
     if (reduceMotion || width === 0) return;
     grow.set(withTiming(1, { duration: theme.motion.chartMs, easing: MOTION_EASING }));
   }, [grow, reduceMotion, width, theme.motion.chartMs]);
-  const growTransform = useDerivedValue(() => [{ scaleY: grow.get() }]);
+  const growStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: grow.get() }] }));
 
   const indexAt = (x: number) =>
     Math.min(days.length - 1, Math.max(0, Math.floor(x / (barWidth + gap))));
@@ -78,42 +78,49 @@ export function DailySpendBars({ days, average }: { days: DaySpend[]; average: n
           accessibilityLabel={`Daily spending. Average ${formatMoney(average)} a day.`}
         >
           {width > 0 ? (
-            <Canvas style={styles.canvas}>
-              <Group transform={growTransform} origin={vec(0, height)}>
-                {days.map((d, i) => {
-                  const h = Math.max(MIN_BAR, (d.totalCents / max) * height);
-                  const future = d.date > today;
-                  let color: string = theme.colors.primaryMuted;
-                  if (future) color = theme.colors.surfaceMuted;
-                  else if (i === focus) color = theme.colors.primary;
-                  else if (d.totalCents > average) color = theme.colors.primary;
-                  return (
-                    <RoundedRect
-                      key={d.day}
-                      x={i * (barWidth + gap)}
-                      y={height - h}
-                      width={barWidth}
-                      height={h}
-                      r={Math.min(barWidth / 2, theme.radius.sm)}
-                      color={color}
-                      opacity={
-                        selected != null && i !== selected && !future ? theme.opacity.dimmed : 1
-                      }
-                    />
-                  );
-                })}
-              </Group>
+            <>
+              <Animated.View style={[styles.layer, styles.grow, growStyle]}>
+                <Svg width={width} height={height}>
+                  {days.map((d, i) => {
+                    const h = Math.max(MIN_BAR, (d.totalCents / max) * height);
+                    const future = d.date > today;
+                    let color: string = theme.colors.primaryMuted;
+                    if (future) color = theme.colors.surfaceMuted;
+                    else if (i === focus) color = theme.colors.primary;
+                    else if (d.totalCents > average) color = theme.colors.primary;
+                    const r = Math.min(barWidth / 2, theme.radius.sm);
+                    return (
+                      <Rect
+                        key={d.day}
+                        x={i * (barWidth + gap)}
+                        y={height - h}
+                        width={barWidth}
+                        height={h}
+                        rx={r}
+                        ry={r}
+                        fill={color}
+                        opacity={
+                          selected != null && i !== selected && !future ? theme.opacity.dimmed : 1
+                        }
+                      />
+                    );
+                  })}
+                </Svg>
+              </Animated.View>
               {average > 0 ? (
-                <Line
-                  p1={vec(0, avgY)}
-                  p2={vec(width, avgY)}
-                  color={theme.colors.textSubtle}
-                  strokeWidth={theme.sizes.tick}
-                >
-                  <DashPathEffect intervals={DASH} />
-                </Line>
+                <Svg width={width} height={height} style={styles.layer}>
+                  <Line
+                    x1={0}
+                    y1={avgY}
+                    x2={width}
+                    y2={avgY}
+                    stroke={theme.colors.textSubtle}
+                    strokeWidth={theme.sizes.tick}
+                    strokeDasharray={DASH}
+                  />
+                </Svg>
               ) : null}
-            </Canvas>
+            </>
           ) : null}
         </View>
       </GestureDetector>
@@ -137,7 +144,9 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: theme.typography.caption.lineHeight + theme.typography.headline.lineHeight,
   },
   chart: { height: theme.sizes.barChartHeight, marginTop: theme.space.md },
-  canvas: { flex: 1 },
+  layer: { position: 'absolute', top: 0, left: 0 },
+  // Bars grow up from the baseline.
+  grow: { transformOrigin: 'bottom' },
   axis: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,13 +1,13 @@
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { useEffect, type ReactNode } from 'react';
 import { View } from 'react-native';
-import {
-  useDerivedValue,
+import Animated, {
+  useAnimatedProps,
   useReducedMotion,
   useSharedValue,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { MOTION_EASING } from '@/design-system';
@@ -16,7 +16,8 @@ export type DonutSlice = { key: string; value: number; color: string };
 
 /** Breathing room between slices, in points along the ring. */
 const GAP = 4;
-const DEG = 180 / Math.PI;
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /**
  * Ring chart of slices with rounded ends and small gaps, sweeping in clockwise from 12 o'clock.
@@ -28,6 +29,7 @@ export function SpendDonut({ slices, children }: { slices: DonutSlice[]; childre
   const size = theme.sizes.donut;
   const stroke = theme.sizes.donutStroke;
   const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
   const progress = useSharedValue(reduceMotion ? 1 : 0);
 
   useEffect(() => {
@@ -37,40 +39,35 @@ export function SpendDonut({ slices, children }: { slices: DonutSlice[]; childre
 
   const single = slices.length === 1;
   // Round caps add half a stroke at each end; trim that and the gap from each sweep.
-  const trimDeg = single ? 0 : ((GAP + stroke) / radius) * DEG;
-  const oval = Skia.XYWHRect(stroke / 2, stroke / 2, size - stroke, size - stroke);
-
-  const arcs = layoutArcs(slices).map((arc) => {
-    const sweep = Math.max((arc.to - arc.from) * 360 - trimDeg, 0.1);
-    const startDeg = -90 + arc.from * 360 + trimDeg / 2;
-    const path = Skia.PathBuilder.Make()
-      .addArc(oval, startDeg, single ? 359.99 : sweep)
-      .build();
-    return { ...arc, path };
-  });
+  const trim = single ? 0 : GAP + stroke;
 
   return (
     <View style={styles.root(size)}>
-      <Canvas style={styles.canvas(size)}>
-        <Path
-          path={Skia.PathBuilder.Make().addArc(oval, 0, 359.99).build()}
-          style="stroke"
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={theme.colors.surfaceMuted}
           strokeWidth={stroke}
-          color={theme.colors.surfaceMuted}
         />
-        {arcs.map((arc) => (
+        {layoutArcs(slices).map((arc) => (
           <Arc
             key={arc.key}
-            path={arc.path}
+            center={size / 2}
+            radius={radius}
+            circumference={circumference}
             color={arc.color}
             stroke={stroke}
             cap={single ? 'butt' : 'round'}
+            trim={trim}
             from={arc.from}
             to={arc.to}
             progress={progress}
           />
         ))}
-      </Canvas>
+      </Svg>
       <View style={styles.center} pointerEvents="none">
         {children}
       </View>
@@ -92,47 +89,63 @@ function layoutArcs(slices: DonutSlice[]) {
   }));
 }
 
-/** One slice. It starts drawing once the sweep reaches `from` and is full at `to`. */
+/**
+ * One slice, drawn as a dash on the ring. It starts drawing once the sweep reaches `from`
+ * and is full at `to`.
+ */
 function Arc({
-  path,
+  center,
+  radius,
+  circumference,
   color,
   stroke,
   cap,
+  trim,
   from,
   to,
   progress,
 }: {
-  path: ReturnType<typeof Skia.Path.Make>;
+  center: number;
+  radius: number;
+  circumference: number;
   color: string;
   stroke: number;
   cap: 'butt' | 'round';
+  trim: number;
   from: number;
   to: number;
   progress: SharedValue<number>;
 }) {
-  const end = useDerivedValue(() => {
+  const length = Math.max((to - from) * circumference - trim, 0.1);
+  // SVG circles start at 3 o'clock; turn back a quarter so the ring starts at 12.
+  const startDeg = -90 + ((from * circumference + trim / 2) / circumference) * 360;
+
+  const animatedProps = useAnimatedProps(() => {
     const p = progress.get();
-    if (p <= from) return 0;
-    if (p >= to) return 1;
-    return (p - from) / (to - from);
+    let end = (p - from) / (to - from);
+    if (p <= from) end = 0;
+    if (p >= to) end = 1;
+    return { strokeDashoffset: length * (1 - end), opacity: p > from ? 1 : 0 };
   });
-  const opacity = useDerivedValue(() => (progress.get() > from ? 1 : 0));
+
   return (
-    <Path
-      path={path}
-      style="stroke"
+    <AnimatedCircle
+      cx={center}
+      cy={center}
+      r={radius}
+      fill="none"
+      stroke={color}
       strokeWidth={stroke}
-      strokeCap={cap}
-      color={color}
-      end={end}
-      opacity={opacity}
+      strokeLinecap={cap}
+      strokeDasharray={[length, circumference]}
+      transform={`rotate(${startDeg} ${center} ${center})`}
+      animatedProps={animatedProps}
     />
   );
 }
 
 const styles = StyleSheet.create(() => ({
   root: (size: number) => ({ width: size, height: size, alignSelf: 'center' }),
-  canvas: (size: number) => ({ width: size, height: size }),
   center: {
     position: 'absolute',
     top: 0,
