@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'com.muhibullah.flow',
     adaptiveIcon: {
-      backgroundColor: '#F3F4F6',
+      backgroundColor: '#087F5B',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -38,8 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         backgroundColor: '#F3F4F6',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
-        dark: { backgroundColor: '#07090C' },
+        imageWidth: 96,
+        dark: { backgroundColor: '#07090C', image: './assets/images/splash-icon-dark.png' },
       },
     ],
     'expo-sqlite',
