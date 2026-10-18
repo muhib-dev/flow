@@ -8,6 +8,7 @@ export type StackScreenOptions = Exclude<ScreenOptions, (...args: never[]) => un
 /** Shared native-stack header styling driven by theme tokens. */
 export function useStackScreenOptions(): StackScreenOptions {
   const { theme } = useUnistyles();
+
   return {
     headerTintColor: theme.colors.primary,
     headerTitleStyle: { color: theme.colors.text },

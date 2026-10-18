@@ -7,6 +7,7 @@ import { useSessionStore } from '../store/session-store';
 
 export function useSignIn() {
   const signIn = useSessionStore((s) => s.signIn);
+
   return useMutation({
     mutationFn: requestMagicLink,
     onSuccess: (session) => signIn(session),
